@@ -58,7 +58,7 @@
         <!-- Total de IPs baneadas: {{ totalBanned }} -->
          <!-- ⏰ reloj -->
             <!-- ⏰ reloj -->
- <div class="flex items-center gap-2 text-black dark:text-white font-mono">
+ <div class="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1 rounded-full shadow text-black dark:text-black font-mono text-sm">
   <span class="animate-pulse">🕒</span>
   <span>{{ clock }}</span>
 </div>

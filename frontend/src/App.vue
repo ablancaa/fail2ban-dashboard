@@ -2,52 +2,50 @@
   <div class="min-h-screen bg-gray-100 p-4">
     <div class="max-w-6xl mx-auto">
 
-    <h1 class="text-2xl md:text-3xl font-bold mb-4 flex items-center gap-2">
-  <img src="../src/assets/Fail2ban_logo.png" class="w-20 h-20" />
-  Fail2Ban Dashboard
-</h1>
-<!-- Control Fail2Ban -->
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-4 flex items-center justify-between flex-wrap gap-3">
+      <h1 class="text-2xl md:text-3xl font-bold mb-4 flex items-center gap-2">
+        <img src="../src/assets/Fail2ban_logo.png" class="w-20 h-20" />
+        Fail2Ban Dashboard
+      </h1>
+      <!-- Control Fail2Ban -->
+      <div
+        class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-4 flex items-center justify-between flex-wrap gap-3">
 
-  <div class="flex items-center gap-2">
-    <div
-      class="w-3 h-3 rounded-full animate-pulse"
-      :class="{
-        'bg-green-500': serviceStatus === 'running',
-        'bg-red-500': serviceStatus === 'stopped',
-        'bg-yellow-400': serviceStatus === 'error',
-        'bg-gray-400': serviceStatus === 'loading'
-      }"
-    ></div>
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-full animate-pulse" :class="{
+            'bg-green-500': serviceStatus === 'running',
+            'bg-red-500': serviceStatus === 'stopped',
+            'bg-yellow-400': serviceStatus === 'error',
+            'bg-gray-400': serviceStatus === 'loading'
+          }"></div>
 
-    <span class="font-semibold text-gray-700 dark:text-gray-200">
-      Estado Fail2Ban:
-      <span v-if="serviceStatus === 'running'">Activo</span>
-      <span v-if="serviceStatus === 'stopped'">Parado</span>
-      <span v-if="serviceStatus === 'error'">Problema</span>
-      <span v-if="serviceStatus === 'loading'">Comprobando...</span>
-    </span>
-  </div>
+          <span class="font-semibold text-gray-700 dark:text-gray-200">
+            Estado Fail2Ban:
+            <span v-if="serviceStatus === 'running'">Activo</span>
+            <span v-if="serviceStatus === 'stopped'">Parado</span>
+            <span v-if="serviceStatus === 'error'">Problema</span>
+            <span v-if="serviceStatus === 'loading'">Comprobando...</span>
+          </span>
+        </div>
 
-  <div class="flex gap-2">
+        <div class="flex gap-2">
 
-<button @click="startService"
-  class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded flex items-center gap-1">
-  <Play size="16"/> Iniciar
-</button>
+          <button @click="startService"
+            class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded flex items-center gap-1">
+            <Play size="16" /> Iniciar
+          </button>
 
-<button @click="restartService"
-  class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded flex items-center gap-1">
-  <RotateCw size="16"/> Reiniciar
-</button>
+          <button @click="restartService"
+            class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded flex items-center gap-1">
+            <RotateCw size="16" /> Reiniciar
+          </button>
 
-<button @click="stopService"
-  class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded flex items-center gap-1">
-  <Square size="16"/> Parar
-</button>
-  </div>
+          <button @click="stopService"
+            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded flex items-center gap-1">
+            <Square size="16" /> Parar
+          </button>
+        </div>
 
-</div>
+      </div>
 
       <!-- Total de IPs baneadas -->
       <div class="mb-4 text-lg font-semibold">
@@ -70,23 +68,19 @@
               <td class="p-2">{{ jail.bannedCount }}</td>
               <td class="p-2">
                 <div class="flex flex-wrap gap-1">
-                  <span
-                    v-for="ip in jail.banned"
-                    :key="ip"
-                    :class="[
-                      'bg-red-100 text-red-700 px-2 py-1 rounded text-xs flex items-center transition',
-                      newlyBanned[jail.jail]?.includes(ip) ? 'bg-yellow-200 text-yellow-800 animate-pulse' : ''
-                    ]"
-                  >
+                  <span v-for="ip in jail.banned" :key="ip" :class="[
+                    'bg-red-100 text-red-700 px-2 py-1 rounded text-xs flex items-center transition',
+                    newlyBanned[jail.jail]?.includes(ip) ? 'bg-yellow-200 text-yellow-800 animate-pulse' : ''
+                  ]">
                     {{ ip }}
-                    <button
-                      @click="unbanIP(jail.jail, ip)"
-                      class="ml-1 bg-red-500 text-white rounded px-1 py-0.5 text-[0.65rem] hover:bg-red-600"
-                    >
+                    <button @click="unbanIP(jail.jail, ip)"
+                      class="ml-1 bg-red-500 text-white rounded px-1 py-0.5 text-[0.65rem] hover:bg-red-600">
                       Unban
                     </button>
                   </span>
-                  <span v-if="jail.banned.length === 0" class="text-gray-500 text-xs">–</span>
+                  <span v-if="jail.banned.length === 0" class="text-gray-500 text-xs">
+                    <OctagonMinus size="12" class="mr-1" />
+                  </span>
                 </div>
               </td>
             </tr>
@@ -94,18 +88,17 @@
         </table>
       </div>
 
-      <!-- Gráfico de IPs baneadas -->
+      <!-- GrÃ¡fico de IPs baneadas -->
       <div class="bg-white rounded-xl shadow p-4">
-        <canvas id="chart" height="120"></canvas>
+        <h2 class="font-semibold mb-2">IPs bloqueadas por Jail</h2>
+        <canvas id="chart" height="100"></canvas>
       </div>
-
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mt-6">
+        <h2 class="font-semibold mb-2">Uptime Fail2Ban</h2>
+        <canvas id="uptimeChart" height="100"></canvas>
+      </div>
+      <JailConfig />
     </div>
-
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mt-6">
-  <h2 class="font-semibold mb-2">Uptime Fail2Ban</h2>
-  <canvas id="uptimeChart" height="100"></canvas>
-</div>
-<JailConfig />
   </div>
 </template>
 
@@ -114,7 +107,7 @@ import { ref, onMounted, reactive, computed, watch } from 'vue'
 import io from 'socket.io-client'
 import Chart from 'chart.js/auto'
 import axios from 'axios'
-import { Play, RotateCw, Square } from 'lucide-vue-next'
+import { Play, RotateCw, Square, OctagonMinus } from 'lucide-vue-next'
 import JailConfig from './components/JailConfig.vue'
 
 const serviceStatus = ref('loading')
@@ -162,7 +155,7 @@ const jails = ref([])
 const chart = ref(null)
 const newlyBanned = reactive({})
 
-// Conexión Socket.io
+// Conexiï¿½n Socket.io
 const socket = io('http://192.168.1.137:3000')
 
 if ("Notification" in window && Notification.permission !== "granted") {
@@ -295,12 +288,22 @@ if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
 .animate-pulse {
   animation: pulse 1.5s infinite;
 }
+
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 @media (max-width: 640px) {
-  table { font-size: 0.75rem; }
+  table {
+    font-size: 0.75rem;
+  }
 }
 </style>

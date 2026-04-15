@@ -135,7 +135,7 @@ const fetchServiceStatus = async () => {
   try {
     const res = await axios.get('http://192.168.1.137:3000/api/service-status')
 
-    console.log('STATUS RAW ?', res.data)
+    //console.log('STATUS RAW ?', res.data)
 
     const status = (res.data.status || '').toLowerCase().trim()
 

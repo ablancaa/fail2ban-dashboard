@@ -52,22 +52,31 @@
 </template>
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-
+const props = defineProps({
+  jails: {
+    type: Array,
+    default: () => []
+  }
+})
 
 onMounted(() => {
     fetchJailsCount()
     setInterval(fetchJailsCount, 10000)
 })
 
+const activeJails = computed(() => {
+  return props.jails.length
+})
+
 const jailsCount = ref(0)
 
-const activeJails = computed(() => {
-  return jails.value.filter(j =>
-    j.jail &&
-    !j.error &&
-    typeof j.bannedCount === 'number'
-  ).length
-})
+// const activeJails = computed(() => {
+//   return jails.value.filter(j =>
+//     j.jail &&
+//     !j.error &&
+//     typeof j.bannedCount === 'number'
+//   ).length
+// })
 
 console.log(jails.value)
 

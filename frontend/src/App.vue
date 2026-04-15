@@ -123,18 +123,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, reactive, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, reactive, computed, watch, nextTick } from 'vue'
+import { Play, RotateCw, Square, OctagonMinus } from 'lucide-vue-next'
 import io from 'socket.io-client'
 import Chart from 'chart.js/auto'
 import axios from 'axios'
-import { Play, RotateCw, Square, OctagonMinus } from 'lucide-vue-next'
-import JailConfig from './components/JailConfig.vue'
 //import { toRaw } from 'vue'
-import { nextTick } from 'vue'
+
 import { useFail2BanStore } from './stores/fail2ban'
 import NavBar from './components/NavBar.vue'
 import Logs from './components/Logs.vue'
+import JailConfig from './components/JailConfig.vue'
 
+
+const alerts = ref(0)
 const store = useFail2BanStore()
 const serviceStatus = ref('loading')
 const uptimeChart = ref(null)
@@ -151,10 +153,8 @@ async function getCountry(ip) {
 
   return res.data
 }
-const updateClock = () => {
-  const now = new Date()
-  clock.value = now.toLocaleString()
-}
+
+
 
 onMounted(() => {
   store.connectSocket()
@@ -179,6 +179,36 @@ watch(serviceStatus, (newVal) => {
     })
   }
 })
+
+socket.on('status', (data) => {
+  jails.value = data
+  updateChart(data)
+})
+
+socket.on('alert', ({ jail, ips }) => {
+  newlyBanned[jail] = ips
+
+  if ("Notification" in window && Notification.permission === "granted") {
+    ips.forEach(ip => {
+      new Notification(`Fail2Ban Alert`, {
+        body: `Nueva IP bloqueada: ${ip} en jail ${jail}`,
+        icon: '/favicon.ico'
+      })
+    })
+  }
+  
+  socket.on('alert', async () => {
+  alerts.value++
+  await fetchBans()
+})
+
+  setTimeout(() => { newlyBanned[jail] = [] }, 5000)
+})
+
+const updateClock = () => {
+  const now = new Date()
+  clock.value = now.toLocaleString()
+}
 
 //Obtener estado servicio (NORMALIZADO)
 const fetchServiceStatus = async () => {
@@ -208,7 +238,7 @@ const jails = ref([])
 const chart = ref(null)
 const newlyBanned = reactive({})
 
-// Conexi�n Socket.io
+// Conexión Socket.io
 const socket = io('http://192.168.1.137:3000')
 
 if ("Notification" in window && Notification.permission !== "granted") {
@@ -273,31 +303,6 @@ const updateChart = async (data) => {
     }
   })
 }
-
-socket.on('status', (data) => {
-  jails.value = data
-  updateChart(data)
-})
-
-socket.on('alert', ({ jail, ips }) => {
-  newlyBanned[jail] = ips
-
-  if ("Notification" in window && Notification.permission === "granted") {
-    ips.forEach(ip => {
-      new Notification(`Fail2Ban Alert`, {
-        body: `Nueva IP bloqueada: ${ip} en jail ${jail}`,
-        icon: '/favicon.ico'
-      })
-    })
-  }
-  
-  socket.on('alert', async () => {
-  alerts.value++
-  await fetchBans()
-})
-
-  setTimeout(() => { newlyBanned[jail] = [] }, 5000)
-})
 
 const startService = async () => {
   await axios.post('http://192.168.1.137:3000/api/service-start')

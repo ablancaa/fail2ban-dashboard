@@ -8,7 +8,7 @@
         <span class="font-bold text-lg">Fail2Ban Panel</span>
       </div>
 
-      <!-- CENTER (DESKTOP) -->
+      <!-- DESKTOP MENU -->
       <div class="hidden md:flex items-center gap-2">
         <button class="nav-btn">📊 Dashboard</button>
 
@@ -19,7 +19,9 @@
 
         <button class="nav-btn">
           🚨 Alertas
-          <span v-if="store.alerts" class="badge-red">{{ store.alerts }}</span>
+          <span v-if="store.alerts > 0" class="badge-red">
+            {{ store.alerts }}
+          </span>
         </button>
 
         <button class="nav-btn">⚙️ Config</button>
@@ -39,7 +41,7 @@
         <!-- HAMBURGER -->
         <button
           class="md:hidden text-2xl px-3 py-1 rounded-xl hover:bg-slate-800"
-          @click="mobileOpen = !mobileOpen"
+          @click="toggleMenu"
         >
           ☰
         </button>
@@ -47,16 +49,19 @@
     </div>
 
     <!-- MOBILE MENU -->
-    <div
-      v-show="mobileOpen"
-      class="md:hidden mt-3 bg-slate-800 rounded-2xl p-3 space-y-2 shadow-lg"
-    >
-      <button class="mobile-btn">📊 Dashboard</button>
-      <button class="mobile-btn">🔒 Jails</button>
-      <button class="mobile-btn">🚨 Alertas</button>
-      <button class="mobile-btn">⚙️ Config</button>
-      <button class="mobile-btn">📄 Logs</button>
-    </div>
+    <transition name="slide">
+      <div
+        v-if="mobileOpen"
+        class="md:hidden mt-3 bg-slate-800 rounded-2xl p-3 space-y-2 shadow-lg"
+      >
+        <button class="mobile-btn">📊 Dashboard</button>
+        <button class="mobile-btn">🔒 Jails</button>
+        <button class="mobile-btn">🚨 Alertas</button>
+        <button class="mobile-btn">⚙️ Config</button>
+        <button class="mobile-btn">📄 Logs</button>
+      </div>
+    </transition>
+
   </nav>
 </template>
 
@@ -65,7 +70,12 @@ import { ref } from 'vue'
 import { useFail2BanStore } from '../stores/fail2ban'
 
 const store = useFail2BanStore()
+
 const mobileOpen = ref(false)
+
+const toggleMenu = () => {
+  mobileOpen.value = !mobileOpen.value
+}
 </script>
 
 <style scoped>
@@ -83,5 +93,17 @@ const mobileOpen = ref(false)
 
 .badge-red {
   @apply ml-2 bg-red-600 text-xs px-2 py-0.5 rounded-full;
+}
+
+/* animación menú */
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.2s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 </style>

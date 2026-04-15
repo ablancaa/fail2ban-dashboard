@@ -64,14 +64,14 @@
         <table class="w-full text-sm md:text-base">
           <thead>
             <tr class="border-b">
-              <th class="text-left p-2">Jail</th>
+              <th class="text-left p-2"><ClipboardPaste size="10" class="mr-1"/> Jail</th>
               <th class="text-left p-2">IPs bloqueadas</th>
               <th class="text-left p-2">Lista IPs</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="jail in jails" :key="jail.jail" class="border-b">
-              <td class="p-2 font-medium"><ClipboardPaste size="5" class="mr-1"/> {{ jail.jail }}</td>
+              <td class="p-2 font-medium">{{ jail.jail }}</td>
               <td class="p-2">{{ jail.bannedCount }}</td>
               <td class="p-2">
                 <div class="flex flex-wrap gap-1">

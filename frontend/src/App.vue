@@ -64,7 +64,7 @@
         <table class="w-full text-sm md:text-base">
           <thead>
             <tr class="border-b">
-              <th class="text-left p-2"><ClipboardPaste size="10" class="mr-1"/> Jail</th>
+              <th class="text-left p-2">Jail</th>
               <th class="text-left p-2">IPs bloqueadas</th>
               <th class="text-left p-2">Lista IPs</th>
             </tr>
@@ -116,7 +116,7 @@ import { ref, onMounted, onUnmounted, reactive, computed, watch } from 'vue'
 import io from 'socket.io-client'
 import Chart from 'chart.js/auto'
 import axios from 'axios'
-import { Play, RotateCw, Square, OctagonMinus,ClipboardPaste  } from 'lucide-vue-next'
+import { Play, RotateCw, Square, OctagonMinus } from 'lucide-vue-next'
 import JailConfig from './components/JailConfig.vue'
 //import { toRaw } from 'vue'
 import { nextTick } from 'vue'

@@ -187,6 +187,21 @@ const sendStatus = () => {
   });
 };
 
+//numero de jails
+app.get('/api/jails-count', (req, res) => {
+  exec('fail2ban-client status', (err, stdout) => {
+    if (err) return res.json({ count: 0 })
+
+    const match = stdout.match(/Jail list:\s*(.*)/)
+
+    const count = match?.[1]
+      ? match[1].split(',').filter(Boolean).length
+      : 0
+
+    res.json({ count })
+  })
+})
+
   // enviar al conectar
   sendStatus();
 

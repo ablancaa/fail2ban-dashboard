@@ -114,9 +114,9 @@
         <h2 class="font-semibold mb-2">Uptime Fail2Ban</h2>
         <canvas id="uptimeChart" height="100"></canvas>
       </div> -->
-      <JailConfig />
-      <br/>
       <Logs />
+      <br/>
+      <JailConfig />
       
     </div>
   </div>
@@ -286,6 +286,7 @@ socket.on('status', (data) => {
 
 socket.on('alert', ({ jail, ips }) => {
   newlyBanned[jail] = ips
+  alerts.value++
 
   if ("Notification" in window && Notification.permission === "granted") {
     ips.forEach(ip => {
@@ -295,11 +296,6 @@ socket.on('alert', ({ jail, ips }) => {
       })
     })
   }
-  
-  socket.on('alert', async () => {
-  alerts.value++
-  await fetchBans()
-})
 
   setTimeout(() => { newlyBanned[jail] = [] }, 5000)
 })
@@ -320,11 +316,12 @@ const restartService = async () => {
 }
 
 const updateUptimeChart = () => {
+  if (!ctx) return
+
   const labels = uptimeData.value.map(d => d.time)
   const values = uptimeData.value.map(d => d.value)
 
   if (!uptimeChart.value) {
-    const ctx = document.getElementById('uptimeChart')
     uptimeChart.value = new Chart(ctx, {
       type: 'doughnut',
       data: {

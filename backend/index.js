@@ -3,7 +3,6 @@ import { exec } from 'child_process';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import axios from "axios"
 
 const app = express();
 app.use(cors());
@@ -187,14 +186,6 @@ const sendStatus = () => {
 
   });
 };
-//Geolocalizacion de ip
-export async function getCountry(ip) {
-  const res = await axios.get(`http://ip-api.com/json/${ip}`)
-  return {
-    country: res.data.country,
-    code: res.data.countryCode.toLowerCase()
-  }
-}
 
   // enviar al conectar
   sendStatus();

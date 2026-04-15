@@ -49,17 +49,29 @@
       </div>
     </div>
 
-    <!-- MOBILE MENU (FORZADO VISIBLE) -->
+    <!-- MOBILE MENU -->
     <div
       v-if="mobileOpen"
       class="md:hidden mt-3 bg-slate-800 rounded-2xl p-3 space-y-2 shadow-2xl border border-slate-700"
-      style="position: relative; z-index: 9999;"
     >
+
       <button class="mobile-btn">📊 Dashboard</button>
-      <button class="mobile-btn">🔒 Jails</button>
-      <button class="mobile-btn">🚨 Alertas</button>
+
+      <button class="mobile-btn flex items-center justify-between">
+        <span>🔒 Jails</span>
+        <span class="badge">{{ store.activeJails }}</span>
+      </button>
+
+      <button class="mobile-btn flex items-center justify-between">
+        <span>🚨 Alertas</span>
+        <span v-if="store.alerts > 0" class="badge-red">
+          {{ store.alerts }}
+        </span>
+      </button>
+
       <button class="mobile-btn">⚙️ Config</button>
       <button class="mobile-btn">📄 Logs</button>
+
     </div>
   </nav>
 </template>

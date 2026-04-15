@@ -93,6 +93,9 @@
             </tr>
           </tbody>
         </table>
+              <div class="mb-4 text-lg font-semibold">
+        Total de IPs baneadas: {{ totalBanned }}
+        </div>
       </div>
 
       <!-- Gráfico de IPs baneadas -->

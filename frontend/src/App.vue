@@ -29,12 +29,7 @@
             <span v-if="serviceStatus === 'error'">Problema</span>
             <span v-if="serviceStatus === 'loading'">Comprobando...</span>
           </span>
-           <!-- ⏰ reloj -->
- <!-- RELOJ -->
- <div class="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1 rounded-full shadow text-black dark:text-white font-mono text-sm">
-  <span class="animate-pulse">🕒</span>
-  <span>{{ clock }}</span>
-</div>
+
 
         </div>
 
@@ -62,10 +57,11 @@
       <div class="mb-4 text-lg font-semibold">
         <!-- Total de IPs baneadas: {{ totalBanned }} -->
          <!-- ⏰ reloj -->
-  <div class="mt-2 text-sm text-gray-500 flex items-center gap-2">
-    <span class="animate-pulse">🕒</span>
-    {{ clock }}
-  </div>
+            <!-- ⏰ reloj -->
+ <div class="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1 rounded-full shadow text-black dark:text-white font-mono text-sm">
+  <span class="animate-pulse">🕒</span>
+  <span>{{ clock }}</span>
+</div>
       </div>
 
       <!-- Tabla de jails -->

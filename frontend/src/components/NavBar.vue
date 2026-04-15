@@ -21,13 +21,15 @@
                 <button class="nav-btn">
                     🔒 Jails activas
                     <span class="ml-2 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
-                        {{ jailsCount }}
+                        {{ store.activeJails }}
                     </span>
                 </button>
 
                 <button class="nav-btn">
                     🚨 Alertas
-                    <span class="badge-red">3</span>
+                    <span v-if="store.alerts > 0" class="ml-2 bg-red-500 px-2 rounded text-xs">
+                        {{ store.alerts }}
+                    </span>
                 </button>
 
                 <button class="nav-btn">
@@ -37,8 +39,9 @@
 
             <!-- RIGHT -->
             <div class="flex items-center gap-2">
-                <button class="refresh-btn">
-                    🔄
+                <button class="ml-auto bg-blue-600 px-3 py-1 rounded"
+                    @click="store.refresh">
+                    🔄 Refresh
                 </button>
 
                 <!-- mobile menu button -->
@@ -52,6 +55,9 @@
 </template>
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useFail2BanStore } from '../stores/fail2ban'
+
+const store = useFail2BanStore()
 const props = defineProps({
   jails: {
     type: Array,

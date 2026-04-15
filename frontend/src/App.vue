@@ -26,11 +26,7 @@
             <span v-if="serviceStatus === 'loading'">Comprobando...</span>
           </span>
            <!-- ⏰ reloj -->
-           <br/>
-  <div class="mt-2 text-sm text-gray-500 flex items-center gap-2">
-    <span class="animate-pulse">🕒</span>
-    {{ clock }}
-  </div>
+
         </div>
 
         <div class="flex gap-2">
@@ -56,6 +52,11 @@
       <!-- Total de IPs baneadas -->
       <div class="mb-4 text-lg font-semibold">
         Total de IPs baneadas: {{ totalBanned }}
+         <!-- ⏰ reloj -->
+  <div class="mt-2 text-sm text-gray-500 flex items-center gap-2">
+    <span class="animate-pulse">🕒</span>
+    {{ clock }}
+  </div>
       </div>
 
       <!-- Tabla de jails -->

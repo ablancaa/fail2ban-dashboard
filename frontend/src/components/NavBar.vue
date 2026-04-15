@@ -4,7 +4,7 @@
 
     <!-- LEFT -->
     <div class="flex items-center gap-3">
-      <img src="/logo.png" class="w-8 h-8" />
+      <img src="../assets/Fail2ban_logo.png" class="w-8 h-8" />
 
       <span class="font-bold text-lg">
         Fail2Ban Panel

@@ -71,7 +71,7 @@
           </thead>
           <tbody>
             <tr v-for="jail in jails" :key="jail.jail" class="border-b">
-              <td class="p-2 font-medium">{{ jail.jail }}</td>
+              <td class="p-2 font-medium"><ClipboardPaste /> {{ jail.jail }}</td>
               <td class="p-2">{{ jail.bannedCount }}</td>
               <td class="p-2">
                 <div class="flex flex-wrap gap-1">
@@ -116,7 +116,7 @@ import { ref, onMounted, onUnmounted, reactive, computed, watch } from 'vue'
 import io from 'socket.io-client'
 import Chart from 'chart.js/auto'
 import axios from 'axios'
-import { Play, RotateCw, Square, OctagonMinus } from 'lucide-vue-next'
+import { Play, RotateCw, Square, OctagonMinus,ClipboardPaste  } from 'lucide-vue-next'
 import JailConfig from './components/JailConfig.vue'
 //import { toRaw } from 'vue'
 import { nextTick } from 'vue'

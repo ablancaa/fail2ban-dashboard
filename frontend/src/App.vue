@@ -58,26 +58,7 @@
     {{ clock }}
   </div>
       </div>
-      <!-- Geolocalización -->
-<div v-for="ip in ips" :key="ip.ip" class="flex items-center gap-3 py-1">
 
-  <!-- bandera -->
-  <img
-    :src="`https://flagcdn.com/24x18/${ip.code}.png`"
-    class="rounded shadow"
-  />
-
-  <!-- IP -->
-  <span class="font-mono text-sm">
-    {{ ip.ip }}
-  </span>
-
-  <!-- país -->
-  <span class="text-xs text-gray-500">
-    {{ ip.country }}
-  </span>
-
-</div>
       <!-- Tabla de jails -->
       <div class="bg-white rounded-xl shadow p-4 mb-6 overflow-x-auto">
         <table class="w-full text-sm md:text-base">

@@ -144,14 +144,26 @@ const statusColor = computed(() => {
   return 'loading'
 })
 
-const raw = (res.data?.status || '').toLowerCase()
+const fetchServiceStatus = async () => {
+  try {
+    const res = await axios.get('http://192.168.1.137:3000/api/service-status')
 
-if (raw.includes('run') || raw === 'active') {
-  serviceStatus.value = 'running'
-} else if (raw.includes('stop') || raw === 'inactive') {
-  serviceStatus.value = 'stopped'
-} else {
-  serviceStatus.value = 'error'
+    const raw = (res.data?.status || '').toLowerCase().trim()
+
+    if (raw.includes('run') || raw === 'active') {
+      serviceStatus.value = 'running'
+    } 
+    else if (raw.includes('stop') || raw === 'inactive') {
+      serviceStatus.value = 'stopped'
+    } 
+    else {
+      serviceStatus.value = 'error'
+    }
+
+  } catch (e) {
+    console.error(e)
+    serviceStatus.value = 'error'
+  }
 }
 /* ---------------- TOTAL ---------------- */
 const totalBanned = computed(() =>
@@ -194,6 +206,7 @@ socket.on('alert', () => {
 /* ---------------- LIFECYCLE ---------------- */
 onMounted(() => {
   updateClock()
+  fetchServiceStatus()
   clockInterval = setInterval(updateClock, 1000)
 })
 

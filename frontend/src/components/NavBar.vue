@@ -1,5 +1,5 @@
 <template>
-  <nav class="bg-slate-900 text-white px-4 py-3 shadow-lg rounded-b-2xl">
+  <nav class="relative bg-slate-900 text-white px-4 py-3 shadow-lg rounded-b-2xl z-50">
     <div class="max-w-6xl mx-auto flex items-center justify-between">
 
       <!-- LEFT -->
@@ -45,23 +45,22 @@
         >
           ☰
         </button>
+
       </div>
     </div>
 
-    <!-- MOBILE MENU -->
-    <transition name="slide">
-      <div
-        v-if="mobileOpen"
-        class="md:hidden mt-3 bg-slate-800 rounded-2xl p-3 space-y-2 shadow-lg"
-      >
-        <button class="mobile-btn">📊 Dashboard</button>
-        <button class="mobile-btn">🔒 Jails</button>
-        <button class="mobile-btn">🚨 Alertas</button>
-        <button class="mobile-btn">⚙️ Config</button>
-        <button class="mobile-btn">📄 Logs</button>
-      </div>
-    </transition>
-
+    <!-- MOBILE MENU (FORZADO VISIBLE) -->
+    <div
+      v-if="mobileOpen"
+      class="md:hidden mt-3 bg-slate-800 rounded-2xl p-3 space-y-2 shadow-2xl border border-slate-700"
+      style="position: relative; z-index: 9999;"
+    >
+      <button class="mobile-btn">📊 Dashboard</button>
+      <button class="mobile-btn">🔒 Jails</button>
+      <button class="mobile-btn">🚨 Alertas</button>
+      <button class="mobile-btn">⚙️ Config</button>
+      <button class="mobile-btn">📄 Logs</button>
+    </div>
   </nav>
 </template>
 
@@ -70,7 +69,6 @@ import { ref } from 'vue'
 import { useFail2BanStore } from '../stores/fail2ban'
 
 const store = useFail2BanStore()
-
 const mobileOpen = ref(false)
 
 const toggleMenu = () => {
@@ -93,17 +91,5 @@ const toggleMenu = () => {
 
 .badge-red {
   @apply ml-2 bg-red-600 text-xs px-2 py-0.5 rounded-full;
-}
-
-/* animación menú */
-.slide-enter-active,
-.slide-leave-active {
-  transition: all 0.2s ease;
-}
-
-.slide-enter-from,
-.slide-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
 }
 </style>

@@ -19,10 +19,12 @@ const toggle = () => {
 
     <!-- HEADER -->
     <div
-      class="flex items-center justify-between bg-slate-900 text-white px-4 py-3 rounded-xl shadow-md"
+      class="flex items-center justify-between bg-slate-900 text-white px-4 py-3 rounded-xl shadow-md cursor-pointer select-none"
+      @click="toggle"
     >
       <div class="flex items-center gap-2">
         <span class="text-lg">🚫</span>
+
         <h2 class="font-semibold">IPs baneadas (logs)</h2>
 
         <span class="ml-2 bg-red-500 text-xs px-2 py-0.5 rounded-full">
@@ -30,28 +32,23 @@ const toggle = () => {
         </span>
       </div>
 
-      <!-- TOGGLE BUTTON -->
-      <button
-        @click="toggle"
-        class="p-2 rounded hover:bg-slate-800 transition"
+      <!-- ICON -->
+      <svg
+        class="w-4 h-4 transition-transform duration-200"
+        :class="{ 'rotate-180': !open }"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
       >
-        <svg
-          class="w-4 h-4 transition-transform duration-200"
-          :class="{ 'rotate-180': !open }"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M19 9l-7 7-7-7" />
+      </svg>
     </div>
 
     <!-- CONTENT -->
     <transition name="fade">
       <div
-        v-if="open"
+        v-show="open"
         class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl mt-2 shadow-sm overflow-hidden"
       >
 
@@ -64,7 +61,8 @@ const toggle = () => {
           >
             <div class="flex items-center gap-2">
               <span class="text-red-500">🚫</span>
-              <span class="font-mono text-sm">
+
+              <span class="font-mono text-sm text-slate-700 dark:text-slate-200">
                 {{ b.ip }}
               </span>
             </div>
@@ -91,12 +89,13 @@ const toggle = () => {
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
+  overflow: hidden;
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-  transform: translateY(-5px);
+  transform: translateY(-6px);
 }
 </style>

@@ -3,12 +3,15 @@ import { ref, onMounted } from 'vue'
 import { useFail2BanStore } from '../stores/fail2ban'
 
 const store = useFail2BanStore()
-
 const open = ref(true)
 
 onMounted(() => {
   store.fetchBans()
 })
+
+const toggle = () => {
+  open.value = !open.value
+}
 </script>
 
 <template>
@@ -16,8 +19,7 @@ onMounted(() => {
 
     <!-- HEADER -->
     <div
-      class="flex items-center justify-between bg-slate-900 text-white px-4 py-3 rounded-xl shadow-md cursor-pointer hover:bg-slate-800 transition"
-      @click="open = !open"
+      class="flex items-center justify-between bg-slate-900 text-white px-4 py-3 rounded-xl shadow-md"
     >
       <div class="flex items-center gap-2">
         <span class="text-lg">🚫</span>
@@ -28,20 +30,31 @@ onMounted(() => {
         </span>
       </div>
 
-      <!-- icono colapsar -->
-      <span class="text-sm">
-        {{ open ? '▲' : '▼' }}
-      </span>
+      <!-- TOGGLE BUTTON -->
+      <button
+        @click="toggle"
+        class="p-2 rounded hover:bg-slate-800 transition"
+      >
+        <svg
+          class="w-4 h-4 transition-transform duration-200"
+          :class="{ 'rotate-180': !open }"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
     </div>
 
-    <!-- CONTENIDO -->
+    <!-- CONTENT -->
     <transition name="fade">
       <div
-        v-show="open"
-        class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl mt-2 shadow-sm"
+        v-if="open"
+        class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl mt-2 shadow-sm overflow-hidden"
       >
 
-        <!-- LISTA -->
         <div class="divide-y divide-slate-200 dark:divide-slate-700">
 
           <div
@@ -49,23 +62,18 @@ onMounted(() => {
             :key="b.ip"
             class="flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
           >
-
-            <!-- IP -->
             <div class="flex items-center gap-2">
               <span class="text-red-500">🚫</span>
-              <span class="font-mono text-sm text-slate-700 dark:text-slate-200">
+              <span class="font-mono text-sm">
                 {{ b.ip }}
               </span>
             </div>
 
-            <!-- badge -->
             <span class="text-xs bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded">
               ATTACK
             </span>
-
           </div>
 
-          <!-- empty state -->
           <div
             v-if="store.bans.length === 0"
             class="p-6 text-center text-slate-500 text-sm"

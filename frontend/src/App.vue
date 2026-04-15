@@ -111,8 +111,8 @@ import Chart from 'chart.js/auto'
 import axios from 'axios'
 import { Play, RotateCw, Square, OctagonMinus } from 'lucide-vue-next'
 import JailConfig from './components/JailConfig.vue'
-import { toRaw } from 'vue'
-
+//import { toRaw } from 'vue'
+import { nextTick } from 'vue'
 const serviceStatus = ref('loading')
 const uptimeChart = ref(null)
 const uptimeData = ref([])
@@ -182,36 +182,46 @@ const totalBanned = computed(() => {
   return jails.value.reduce((acc, jail) => acc + jail.bannedCount, 0)
 })
 
-const updateChart = (data) => {
-  const raw = toRaw(data)
+const updateChart = async (data) => {
+  await nextTick()
 
-  const labels = raw.map(d => d.jail)
-  const counts = raw.map(d => d.bannedCount)
+  const ctx = document.getElementById('chart')
+  if (!ctx) return
 
-  if (!chart.value) {
-    const ctx = document.getElementById('chart')
-    chart.value = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [{
-          label: 'IPs bloqueadas',
-          data: counts,
-          backgroundColor: 'rgba(220,38,38,0.7)'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true, stepSize: 1 } }
-      }
-    })
-  } else {
-    chart.value.data.labels = labels
-    chart.value.data.datasets[0].data = counts
-    chart.value.update()
+  const labels = data.map(d => d.jail)
+  const counts = data.map(d => d.bannedCount)
+
+  // 🔥 destruir antes de recrear
+  if (chart.value) {
+    chart.value.destroy()
+    chart.value = null
   }
+
+  chart.value = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: [...labels],
+      datasets: [{
+        label: 'IPs bloqueadas',
+        data: [...counts],
+        backgroundColor: 'rgba(220,38,38,0.7)'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false, // importante
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0 }
+        }
+      }
+    }
+  })
 }
 
 socket.on('status', (data) => {

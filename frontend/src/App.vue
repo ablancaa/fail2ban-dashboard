@@ -171,7 +171,11 @@ onMounted(() => {
   setInterval(fetchServiceStatus, 5000)
   updateUptimeChart()
   updateClock()
-  timer = setInterval(updateClock, 1000)
+  clock.value = new Date().toLocaleString()
+
+ timer = setInterval(() => {
+  updateClock()
+}, 1000)
 })
 
 onUnmounted(() => {
@@ -185,6 +189,8 @@ watch(serviceStatus, (newVal) => {
     })
   }
 })
+
+
 
 const updateClock = () => {
   const now = new Date()

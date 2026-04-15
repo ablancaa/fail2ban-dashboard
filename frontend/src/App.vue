@@ -111,6 +111,7 @@ import Chart from 'chart.js/auto'
 import axios from 'axios'
 import { Play, RotateCw, Square, OctagonMinus } from 'lucide-vue-next'
 import JailConfig from './components/JailConfig.vue'
+import { toRaw } from 'vue'
 
 const serviceStatus = ref('loading')
 const uptimeChart = ref(null)
@@ -182,8 +183,11 @@ const totalBanned = computed(() => {
 })
 
 const updateChart = (data) => {
-  const labels = data.map(d => d.jail)
-  const counts = data.map(d => d.bannedCount)
+  const raw = toRaw(data)
+
+  const labels = raw.map(d => d.jail)
+  const counts = raw.map(d => d.bannedCount)
+
   if (!chart.value) {
     const ctx = document.getElementById('chart')
     chart.value = new Chart(ctx, {

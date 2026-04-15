@@ -120,6 +120,7 @@ const uptimeData = ref([])
 onMounted(() => {
   fetchServiceStatus()
   setInterval(fetchServiceStatus, 5000)
+  updateUptimeChart()
 })
 
 watch(serviceStatus, (newVal) => {

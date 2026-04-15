@@ -1,162 +1,183 @@
 <template>
-  <div class="min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
-
+  <div class="min-h-screen bg-gray-100 p-4">
     <div class="max-w-6xl mx-auto">
 
-      <!-- HEADER PRO -->
-      <div class="header">
+      <h1 class="text-2xl md:text-3xl font-bold mb-4 flex items-center gap-2">
+        <img src="../src/assets/Fail2ban_logo.png" class="w-20 h-20" />
+        Fail2Ban Dashboard
+      </h1>
+      <!-- Control Fail2Ban -->
+      <div
+        class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-4 flex items-center justify-between flex-wrap gap-3">
 
-        <div class="title-row">
-          <div class="flex items-center gap-3">
-            <img src="../src/assets/Fail2ban_logo.png" class="w-14 h-14" />
-            <h1 class="title">Fail2Ban Dashboard</h1>
-          </div>
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-full animate-pulse" :class="{
+            'bg-green-500': serviceStatus === 'running',
+            'bg-red-500': serviceStatus === 'stopped',
+            'bg-yellow-400': serviceStatus === 'error',
+            'bg-gray-400': serviceStatus === 'loading'
+          }"></div>
 
-          <div class="clock">
-            🕒 {{ clock }}
-          </div>
+          <span class="font-semibold text-gray-700 dark:text-gray-200">
+            Estado Fail2Ban:
+            <span v-if="serviceStatus === 'running'">Activo</span>
+            <span v-if="serviceStatus === 'stopped'">Parado</span>
+            <span v-if="serviceStatus === 'error'">Problema</span>
+            <span v-if="serviceStatus === 'loading'">Comprobando...</span>
+          </span>
+           <!-- ⏰ reloj -->
+
         </div>
 
-        <!-- NAVBAR PRO -->
-        <nav class="navbar">
-          <button :class="{ active: view === 'dashboard' }" @click="view = 'dashboard'">
-            📊 Dashboard
+        <div class="flex gap-2">
+
+          <button @click="startService"
+            class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded flex items-center gap-1">
+            <Play size="16" /> Iniciar
           </button>
 
-          <button :class="{ active: view === 'jails' }" @click="view = 'jails'">
-            🔒 Jails
-            <span class="badge">{{ totalBanned }}</span>
+          <button @click="restartService"
+            class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded flex items-center gap-1">
+            <RotateCw size="16" /> Reiniciar
           </button>
 
-          <button :class="{ active: view === 'alerts' }" @click="view = 'alerts'">
-            🚨 Alertas
-            <span v-if="alerts > 0" class="badge red">{{ alerts }}</span>
+          <button @click="stopService"
+            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded flex items-center gap-1">
+            <Square size="16" /> Parar
           </button>
-
-          <button :class="{ active: view === 'config' }" @click="view = 'config'">
-            ⚙️ Config
-          </button>
-
-          <button class="right" @click="socket.emit('refresh')">
-            🔄 Recargar
-          </button>
-        </nav>
-
-      </div>
-
-      <!-- STATUS CARD -->
-      <div class="card flex items-center justify-between">
-
-        <div class="flex items-center gap-3">
-          <div class="dot" :class="statusColor"></div>
-
-          <div>
-            <div class="font-semibold">Estado Fail2Ban</div>
-            <div class="text-sm text-gray-500 dark:text-gray-400">
-              {{ serviceStatus }}
-            </div>
-          </div>
         </div>
 
       </div>
 
-      <!-- TOTAL -->
-      <div class="card">
-        <div class="text-lg font-semibold">
-          Total de IPs baneadas: {{ totalBanned }}
-        </div>
+      <!-- Total de IPs baneadas -->
+      <div class="mb-4 text-lg font-semibold">
+        Total de IPs baneadas: {{ totalBanned }}
+         <!-- ⏰ reloj -->
+  <div class="mt-2 text-sm text-gray-500 flex items-center gap-2">
+    <span class="animate-pulse">🕒</span>
+    {{ clock }}
+  </div>
       </div>
 
-      <!-- TABLE -->
-      <div class="card overflow-x-auto">
-        <table class="table">
+      <!-- Tabla de jails -->
+      <div class="bg-white rounded-xl shadow p-4 mb-6 overflow-x-auto">
+        <table class="w-full text-sm md:text-base">
           <thead>
-            <tr>
-              <th>Jail</th>
-              <th>IPs</th>
-              <th>Lista</th>
+            <tr class="border-b">
+              <th class="text-left p-2">Jail</th>
+              <th class="text-left p-2">IPs bloqueadas</th>
+              <th class="text-left p-2">Lista IPs</th>
             </tr>
           </thead>
-
           <tbody>
-            <tr v-for="jail in jails" :key="jail.jail">
-              <td>{{ jail.jail }}</td>
-              <td>{{ jail.bannedCount }}</td>
-
-              <td>
+            <tr v-for="jail in jails" :key="jail.jail" class="border-b">
+              <td class="p-2 font-medium">{{ jail.jail }}</td>
+              <td class="p-2">{{ jail.bannedCount }}</td>
+              <td class="p-2">
                 <div class="flex flex-wrap gap-1">
-                  <span v-for="ip in jail.banned" :key="ip" class="ip">
+                  <span v-for="ip in jail.banned" :key="ip" :class="[
+                    'bg-red-100 text-red-700 px-2 py-1 rounded text-xs flex items-center transition',
+                    newlyBanned[jail.jail]?.includes(ip) ? 'bg-yellow-200 text-yellow-800 animate-pulse' : ''
+                  ]">
                     {{ ip }}
-                    <button class="unban" @click="unbanIP(jail.jail, ip)">
-                      ✕
+                    <button @click="unbanIP(jail.jail, ip)"
+                      class="ml-1 bg-red-500 text-white rounded px-1 py-0.5 text-[0.65rem] hover:bg-red-600">
+                      Unban
                     </button>
+                  </span>
+                  <span v-if="jail.banned.length === 0" class="text-gray-500 text-xs">
+                    <OctagonMinus size="16" class="mr-1" />
                   </span>
                 </div>
               </td>
             </tr>
           </tbody>
-
         </table>
       </div>
 
-      <!-- CHART -->
-      <div class="card">
+      <!-- Gráfico de IPs baneadas -->
+      <div class="bg-white rounded-xl shadow p-4">
         <h2 class="font-semibold mb-2">IPs bloqueadas por Jail</h2>
         <div class="h-64">
           <canvas id="chart"></canvas>
         </div>
       </div>
-
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mt-6">
+        <h2 class="font-semibold mb-2">Uptime Fail2Ban</h2>
+        <canvas id="uptimeChart" height="100"></canvas>
+      </div>
+      <JailConfig />
     </div>
   </div>
 </template>
+
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, reactive, computed, watch } from 'vue'
 import io from 'socket.io-client'
 import Chart from 'chart.js/auto'
 import axios from 'axios'
-
-const view = ref('dashboard')
-const alerts = ref(0)
+import { Play, RotateCw, Square, OctagonMinus } from 'lucide-vue-next'
+import JailConfig from './components/JailConfig.vue'
+//import { toRaw } from 'vue'
+import { nextTick } from 'vue'
 
 const serviceStatus = ref('loading')
-const jails = ref([])
+const uptimeChart = ref(null)
+const uptimeData = ref([])
 const clock = ref('')
-const chart = ref(null)
+let timer = null
+const cache = {}
 
-const socket = io('http://192.168.1.137:3000')
+async function getCountry(ip) {
+  if (cache[ip]) return cache[ip]
 
-let clockInterval = null
+  const res = await axios.get(`http://ip-api.com/json/${ip}`)
+  cache[ip] = res.data
 
-/* ---------------- CLOCK ---------------- */
+  return res.data
+}
 const updateClock = () => {
-  clock.value = new Date().toLocaleTimeString()
+  const now = new Date()
+  clock.value = now.toLocaleString()
 }
 
-/* ---------------- STATUS COLOR (FIX CLAVE) ---------------- */
-const statusColor = computed(() => {
-  const s = (serviceStatus.value || '').toLowerCase()
-
-  if (['active', 'running', 'ok', 'up'].includes(s)) return 'running'
-  if (['inactive', 'stopped', 'down'].includes(s)) return 'stopped'
-  if (['error', 'failed'].includes(s)) return 'error'
-
-  return 'loading'
+onMounted(() => {
+   if (chart.value) {
+    chart.value.destroy()
+  }
+  fetchServiceStatus()
+  setInterval(fetchServiceStatus, 5000)
+  updateUptimeChart()
+  updateClock()
+  timer = setInterval(updateClock, 1000)
 })
 
+onUnmounted(() => {
+  clearInterval(timer)
+})
+
+watch(serviceStatus, (newVal) => {
+  if (newVal === 'stopped') {
+    new Notification('Fail2Ban parado', {
+      body: 'El servicio fail2ban se ha detenido'
+    })
+  }
+})
+
+//Obtener estado servicio (NORMALIZADO)
 const fetchServiceStatus = async () => {
   try {
     const res = await axios.get('http://192.168.1.137:3000/api/service-status')
 
-    const raw = (res.data?.status || '').toLowerCase().trim()
+    //console.log('STATUS RAW ?', res.data)
 
-    if (raw.includes('run') || raw === 'active') {
+    const status = (res.data.status || '').toLowerCase().trim()
+
+    if (status === 'running' || status === 'active') {
       serviceStatus.value = 'running'
-    } 
-    else if (raw.includes('stop') || raw === 'inactive') {
+    } else if (status === 'stopped' || status === 'inactive') {
       serviceStatus.value = 'stopped'
-    } 
-    else {
+    } else {
       serviceStatus.value = 'error'
     }
 
@@ -165,16 +186,46 @@ const fetchServiceStatus = async () => {
     serviceStatus.value = 'error'
   }
 }
-/* ---------------- TOTAL ---------------- */
-const totalBanned = computed(() =>
-  jails.value.reduce((a, b) => a + b.bannedCount, 0)
-)
 
-/* ---------------- CHART SAFE ---------------- */
-const updateChart = (data) => {
+// Datos
+const jails = ref([])
+const chart = ref(null)
+const newlyBanned = reactive({})
+
+// Conexi�n Socket.io
+const socket = io('http://192.168.1.137:3000')
+
+if ("Notification" in window && Notification.permission !== "granted") {
+  Notification.requestPermission()
+}
+
+const unbanIP = async (jail, ip) => {
+  try {
+    const res = await axios.post('http://192.168.1.137:3000/api/unban', { jail, ip })
+    if (res.data.success) {
+      alert(`IP ${ip} desbloqueada en jail ${jail}`)
+      socket.emit('refresh')
+    }
+  } catch (err) {
+    console.error(err)
+    alert('Error al desbloquear IP')
+  }
+}
+
+const totalBanned = computed(() => {
+  return jails.value.reduce((acc, jail) => acc + jail.bannedCount, 0)
+})
+
+const updateChart = async (data) => {
+  await nextTick()
+
   const ctx = document.getElementById('chart')
   if (!ctx) return
 
+  const labels = data.map(d => d.jail)
+  const counts = data.map(d => d.bannedCount)
+
+  // 🔥 destruir antes de recrear
   if (chart.value) {
     chart.value.destroy()
     chart.value = null
@@ -183,137 +234,126 @@ const updateChart = (data) => {
   chart.value = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: data.map(d => d.jail),
+      labels: [...labels],
       datasets: [{
         label: 'IPs bloqueadas',
-        data: data.map(d => d.bannedCount),
-        backgroundColor: '#dc2626'
+        data: [...counts],
+        backgroundColor: 'rgba(220,38,38,0.7)'
       }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false, // importante
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0 }
+        }
+      }
     }
   })
 }
 
-/* ---------------- SOCKET ---------------- */
 socket.on('status', (data) => {
   jails.value = data
   updateChart(data)
 })
 
-socket.on('alert', () => {
-  alerts.value++
+socket.on('alert', ({ jail, ips }) => {
+  newlyBanned[jail] = ips
+
+  if ("Notification" in window && Notification.permission === "granted") {
+    ips.forEach(ip => {
+      new Notification(`Fail2Ban Alert`, {
+        body: `Nueva IP bloqueada: ${ip} en jail ${jail}`,
+        icon: '/favicon.ico'
+      })
+    })
+  }
+
+  setTimeout(() => { newlyBanned[jail] = [] }, 5000)
 })
 
-/* ---------------- LIFECYCLE ---------------- */
-onMounted(() => {
-  updateClock()
-  fetchServiceStatus()
-  clockInterval = setInterval(updateClock, 1000)
-})
+const startService = async () => {
+  await axios.post('http://192.168.1.137:3000/api/service-start')
+  setTimeout(fetchServiceStatus, 500)
+}
 
-onUnmounted(() => {
-  clearInterval(clockInterval)
-  socket.disconnect()
-})
+const stopService = async () => {
+  await axios.post('http://192.168.1.137:3000/api/service-stop')
+  setTimeout(fetchServiceStatus, 500)
+}
 
+const restartService = async () => {
+  await axios.post('http://192.168.1.137:3000/api/service-restart')
+  setTimeout(fetchServiceStatus, 500)
+}
 
+const updateUptimeChart = () => {
+  const labels = uptimeData.value.map(d => d.time)
+  const values = uptimeData.value.map(d => d.value)
+
+  if (!uptimeChart.value) {
+    const ctx = document.getElementById('uptimeChart')
+    uptimeChart.value = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Activo',
+          data: values,
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            ticks: {
+              callback: v => v === 1 ? 'Activo' : 'Parado'
+            },
+            min: 0,
+            max: 1
+          }
+        }
+      }
+    })
+  } else {
+    uptimeChart.value.data.labels = labels
+    uptimeChart.value.data.datasets[0].data = values
+    uptimeChart.value.update()
+  }
+}
+
+if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  document.documentElement.classList.add('dark')
+}
 </script>
-<style scoped>
-.dot.loading { background: #94a3b8; }
-.dot.running { background: #22c55e; }
-.dot.stopped { background: #ef4444; }
-.dot.error { background: #f59e0b; }
 
-.header {
-  margin-bottom: 16px;
+<style>
+.animate-pulse {
+  animation: pulse 1.5s infinite;
 }
 
-.title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
-.title {
-  font-size: 22px;
-  font-weight: bold;
-}
-
-.clock {
-  font-family: monospace;
-  color: #64748b;
-}
-
-/* NAVBAR */
-.navbar {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.navbar button {
-  background: #1e293b;
-  color: white;
-  border: 1px solid #334155;
-  padding: 8px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.navbar button.active {
-  background: #2563eb;
-}
-
-.navbar .right {
-  margin-left: auto;
-  background: #0ea5e9;
-}
-
-/* CARDS */
-.card {
-  background: white;
-  padding: 14px;
-  border-radius: 12px;
-  margin-bottom: 12px;
-}
-
-/* DARK */
-.dark .card {
-  background: #111827;
-  color: white;
-}
-
-/* STATUS DOT */
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-.dot.running { background: #22c55e; }
-.dot.stopped { background: #ef4444; }
-.dot.error { background: #f59e0b; }
-
-/* TABLE */
-.table {
-  width: 100%;
-  font-size: 14px;
-}
-
-.ip {
-  background: #fee2e2;
-  padding: 2px 6px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-}
-
-.unban {
-  margin-left: 6px;
-  background: #ef4444;
-  color: white;
-  border-radius: 4px;
-  padding: 1px 4px;
-  cursor: pointer;
+@media (max-width: 640px) {
+  table {
+    font-size: 0.75rem;
+  }
 }
 </style>

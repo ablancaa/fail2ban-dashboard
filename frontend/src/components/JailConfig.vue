@@ -4,37 +4,37 @@
     <!-- Header desplegable -->
     <button
       @click="toggle"
-      class="w-full flex justify-between items-center mb-2"
+      class="w-full flex justify-between items-center"
     >
       <h2 class="text-lg font-semibold">
         Configuración jail.local
       </h2>
 
       <span
-        class="transform transition-transform duration-300"
+        class="transform transition-transform duration-300 text-gray-500"
         :class="{ 'rotate-180': open }"
       >
         ▼
       </span>
     </button>
 
-    <!-- Botón recargar siempre visible -->
-    <div class="flex justify-end mb-3">
-      <button
-        @click="fetchConfig"
-        class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-      >
-        Recargar
-      </button>
-    </div>
-
-    <!-- Contenido desplegable -->
+    <!-- CONTENIDO -->
     <div
       class="overflow-hidden transition-all duration-300 ease-in-out"
-      :class="open ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'"
+      :class="open ? 'max-h-[600px] mt-3 opacity-100' : 'max-h-0 opacity-0'"
     >
 
-      <div v-if="loading" class="text-gray-500">
+      <!-- 🔄 Botón SOLO cuando está abierto -->
+      <div v-if="open" class="flex justify-end mb-2">
+        <button
+          @click="fetchConfig"
+          class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition"
+        >
+          Recargar
+        </button>
+      </div>
+
+      <div v-if="loading" class="text-gray-500 text-sm">
         Cargando...
       </div>
 
@@ -46,7 +46,6 @@
       </pre>
 
     </div>
-
   </div>
 </template>
 

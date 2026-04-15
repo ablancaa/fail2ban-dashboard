@@ -106,10 +106,10 @@
           <canvas id="chart"></canvas>
         </div>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mt-6">
+      <!-- <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mt-6">
         <h2 class="font-semibold mb-2">Uptime Fail2Ban</h2>
         <canvas id="uptimeChart" height="100"></canvas>
-      </div>
+      </div> -->
       <JailConfig />
     </div>
   </div>

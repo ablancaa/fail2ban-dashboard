@@ -58,6 +58,7 @@
     {{ clock }}
   </div>
       </div>
+      <!-- Geolocalización -->
 <div v-for="ip in ips" :key="ip.ip" class="flex items-center gap-3 py-1">
 
   <!-- bandera -->
@@ -144,7 +145,16 @@ const uptimeChart = ref(null)
 const uptimeData = ref([])
 const clock = ref('')
 let timer = null
+const cache = {}
 
+async function getCountry(ip) {
+  if (cache[ip]) return cache[ip]
+
+  const res = await axios.get(`http://ip-api.com/json/${ip}`)
+  cache[ip] = res.data
+
+  return res.data
+}
 const updateClock = () => {
   const now = new Date()
   clock.value = now.toLocaleString()

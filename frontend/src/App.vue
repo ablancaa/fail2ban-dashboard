@@ -60,12 +60,12 @@
             <!-- ⏰ reloj -->
  
 </div>
-<br/>
-<div class="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1 rounded-full shadow text-black dark:text-white font-mono text-sm">
+
+<div class="flex items-center gap-2 bg-white  rounded-full font-mono text-sm">
   <span class="animate-pulse">🕒</span>
   <span>{{ clock }}</span>
       </div>
-
+<br/>
       <!-- Tabla de jails -->
       <div class="bg-white rounded-xl shadow p-4 mb-6 overflow-x-auto">
         <table class="w-full text-sm md:text-base">

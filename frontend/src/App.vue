@@ -91,7 +91,9 @@
       <!-- Gráfico de IPs baneadas -->
       <div class="bg-white rounded-xl shadow p-4">
         <h2 class="font-semibold mb-2">IPs bloqueadas por Jail</h2>
-        <canvas id="chart" height="100"></canvas>
+        <div class="h-64">
+          <canvas id="chart"></canvas>
+        </div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mt-6">
         <h2 class="font-semibold mb-2">Uptime Fail2Ban</h2>

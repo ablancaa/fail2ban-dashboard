@@ -61,7 +61,7 @@
  
 </div>
 
-<div class="flex items-center gap-2 bg-white  rounded-full font-mono text-sm">
+<div class="flex items-center gap-2 bg-white rounded-full font-mono">
   <span class="animate-pulse">🕒</span>
   <span>{{ clock }}</span>
       </div>

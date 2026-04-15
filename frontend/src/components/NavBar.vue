@@ -35,6 +35,9 @@
                 <button class="nav-btn">
                     ⚙️ Config
                 </button>
+                <button class="nav-btn">
+                    ⚙️ Logs
+                </button>
             </div>
 
             <!-- RIGHT -->

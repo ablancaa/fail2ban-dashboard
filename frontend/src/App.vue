@@ -114,6 +114,7 @@
         <h2 class="font-semibold mb-2">Uptime Fail2Ban</h2>
         <canvas id="uptimeChart" height="100"></canvas>
       </div> -->
+      <br/>
       <Logs />
       <br/>
       <JailConfig />

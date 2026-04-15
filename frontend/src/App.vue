@@ -118,6 +118,9 @@ const uptimeChart = ref(null)
 const uptimeData = ref([])
 
 onMounted(() => {
+   if (chart.value) {
+    chart.value.destroy()
+  }
   fetchServiceStatus()
   setInterval(fetchServiceStatus, 5000)
   updateUptimeChart()

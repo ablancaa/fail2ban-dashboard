@@ -135,18 +135,24 @@ const updateClock = () => {
 
 /* ---------------- STATUS COLOR (FIX CLAVE) ---------------- */
 const statusColor = computed(() => {
-  switch (serviceStatus.value) {
-    case 'running':
-      return 'running'
-    case 'stopped':
-      return 'stopped'
-    case 'error':
-      return 'error'
-    default:
-      return 'loading'
-  }
+  const s = (serviceStatus.value || '').toLowerCase()
+
+  if (['active', 'running', 'ok', 'up'].includes(s)) return 'running'
+  if (['inactive', 'stopped', 'down'].includes(s)) return 'stopped'
+  if (['error', 'failed'].includes(s)) return 'error'
+
+  return 'loading'
 })
 
+const raw = (res.data?.status || '').toLowerCase()
+
+if (raw.includes('run') || raw === 'active') {
+  serviceStatus.value = 'running'
+} else if (raw.includes('stop') || raw === 'inactive') {
+  serviceStatus.value = 'stopped'
+} else {
+  serviceStatus.value = 'error'
+}
 /* ---------------- TOTAL ---------------- */
 const totalBanned = computed(() =>
   jails.value.reduce((a, b) => a + b.bannedCount, 0)
@@ -195,6 +201,8 @@ onUnmounted(() => {
   clearInterval(clockInterval)
   socket.disconnect()
 })
+
+
 </script>
 <style scoped>
 .dot.loading { background: #94a3b8; }

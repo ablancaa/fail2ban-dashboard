@@ -48,3 +48,24 @@
   </div>
 </nav>  
 </template>
+<style scoped>
+.nav-btn {
+  @apply px-3 py-1 rounded-lg text-sm hover:bg-slate-700 transition;
+}
+
+.nav-btn.active {
+  @apply bg-blue-600;
+}
+
+.badge {
+  @apply ml-2 bg-slate-700 text-xs px-2 py-0.5 rounded-full;
+}
+
+.badge-red {
+  @apply ml-2 bg-red-600 text-xs px-2 py-0.5 rounded-full;
+}
+
+.refresh-btn {
+  @apply bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-lg;
+}
+</style>

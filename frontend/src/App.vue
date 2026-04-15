@@ -51,7 +51,7 @@
 
       <!-- Total de IPs baneadas -->
       <div class="mb-4 text-lg font-semibold">
-        Total de IPs baneadas: {{ totalBanned }}
+        <!-- Total de IPs baneadas: {{ totalBanned }} -->
          <!-- ⏰ reloj -->
   <div class="mt-2 text-sm text-gray-500 flex items-center gap-2">
     <span class="animate-pulse">🕒</span>
@@ -94,6 +94,7 @@
           </tbody>
         </table>
               <div class="mb-4 text-lg font-semibold">
+              <br/>
         Total de IPs baneadas: {{ totalBanned }}
         </div>
       </div>

@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import axios from 'axios'
+
 import io from 'socket.io-client'
 
 export const useFail2BanStore = defineStore('fail2ban', () => {
@@ -32,7 +34,13 @@ export const useFail2BanStore = defineStore('fail2ban', () => {
   function refresh() {
     socket.emit('refresh')
   }
+  
+  const bans = ref([])
 
+const fetchBans = async () => {
+  const res = await axios.get('http://192.168.1.137:3000/api/fail2ban-bans')
+  bans.value = res.data.bans
+} 
   return {
     socket,
     jails,
@@ -41,6 +49,8 @@ export const useFail2BanStore = defineStore('fail2ban', () => {
     totalBanned,
     activeJails,
     connectSocket,
-    refresh
+    refresh,
+    bans,
+    fetchBans
   }
 })

@@ -202,6 +202,44 @@ app.get('/api/jails-count', (req, res) => {
   })
 })
 
+// Loc con comando sudo zgrep "Ban" /var/log/fail2ban.log*
+app.get('/api/fail2ban-bans', (req, res) => {
+
+  exec(`zgrep "Ban" /var/log/fail2ban.log*`, (err, stdout) => {
+
+    if (err) {
+      return res.status(500).json({
+        error: err.message,
+        data: []
+      })
+    }
+
+    // parseo básico de logs
+    const lines = stdout.split('\n').filter(Boolean)
+
+    const bans = lines.map(line => {
+
+      // ejemplo línea:
+      // 2026-04-15 fail2ban.actions [1234]: NOTICE [sshd] Ban 1.2.3.4
+
+      const match = line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/)
+
+      return match ? {
+        ip: match[1],
+        raw: line
+      } : null
+
+    }).filter(Boolean)
+
+    res.json({
+      total: bans.length,
+      bans
+    })
+
+  })
+})
+
+
   // enviar al conectar
   sendStatus();
 

@@ -286,6 +286,11 @@ socket.on('alert', ({ jail, ips }) => {
       })
     })
   }
+  
+  socket.on('alert', async () => {
+  alerts.value++
+  await fetchBans()
+})
 
   setTimeout(() => { newlyBanned[jail] = [] }, 5000)
 })

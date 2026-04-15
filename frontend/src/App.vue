@@ -79,7 +79,7 @@
                     </button>
                   </span>
                   <span v-if="jail.banned.length === 0" class="text-gray-500 text-xs">
-                    <OctagonMinus size="12" class="mr-1" />
+                    <OctagonMinus size="16" class="mr-1" />
                   </span>
                 </div>
               </td>

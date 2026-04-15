@@ -128,8 +128,10 @@ import { Play, RotateCw, Square, OctagonMinus } from 'lucide-vue-next'
 import JailConfig from './components/JailConfig.vue'
 //import { toRaw } from 'vue'
 import { nextTick } from 'vue'
+import { useFail2BanStore } from './stores/fail2ban'
 import NavBar from './components/NavBar.vue'
 
+const store = useFail2BanStore()
 const serviceStatus = ref('loading')
 const uptimeChart = ref(null)
 const uptimeData = ref([])
@@ -151,6 +153,7 @@ const updateClock = () => {
 }
 
 onMounted(() => {
+  store.connectSocket()
    if (chart.value) {
     chart.value.destroy()
   }

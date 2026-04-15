@@ -180,31 +180,6 @@ watch(serviceStatus, (newVal) => {
   }
 })
 
-socket.on('status', (data) => {
-  jails.value = data
-  updateChart(data)
-})
-
-socket.on('alert', ({ jail, ips }) => {
-  newlyBanned[jail] = ips
-
-  if ("Notification" in window && Notification.permission === "granted") {
-    ips.forEach(ip => {
-      new Notification(`Fail2Ban Alert`, {
-        body: `Nueva IP bloqueada: ${ip} en jail ${jail}`,
-        icon: '/favicon.ico'
-      })
-    })
-  }
-  
-  socket.on('alert', async () => {
-  alerts.value++
-  await fetchBans()
-})
-
-  setTimeout(() => { newlyBanned[jail] = [] }, 5000)
-})
-
 const updateClock = () => {
   const now = new Date()
   clock.value = now.toLocaleString()
@@ -303,6 +278,31 @@ const updateChart = async (data) => {
     }
   })
 }
+
+socket.on('status', (data) => {
+  jails.value = data
+  updateChart(data)
+})
+
+socket.on('alert', ({ jail, ips }) => {
+  newlyBanned[jail] = ips
+
+  if ("Notification" in window && Notification.permission === "granted") {
+    ips.forEach(ip => {
+      new Notification(`Fail2Ban Alert`, {
+        body: `Nueva IP bloqueada: ${ip} en jail ${jail}`,
+        icon: '/favicon.ico'
+      })
+    })
+  }
+  
+  socket.on('alert', async () => {
+  alerts.value++
+  await fetchBans()
+})
+
+  setTimeout(() => { newlyBanned[jail] = [] }, 5000)
+})
 
 const startService = async () => {
   await axios.post('http://192.168.1.137:3000/api/service-start')

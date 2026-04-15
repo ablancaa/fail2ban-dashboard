@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-gray-100 p-4">
   
     <div class="max-w-6xl mx-auto">
-<NavBar />
+<NavBar :jails="jails" />
 <br/>
       <h1 class="text-2xl md:text-3xl font-bold mb-4 flex items-center gap-2">
         <img src="../src/assets/Fail2ban_logo.png" class="w-20 h-20" />

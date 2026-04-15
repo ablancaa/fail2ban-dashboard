@@ -270,7 +270,7 @@ const updateUptimeChart = () => {
   if (!uptimeChart.value) {
     const ctx = document.getElementById('uptimeChart')
     uptimeChart.value = new Chart(ctx, {
-      type: 'line',
+      type: 'doughnut',
       data: {
         labels,
         datasets: [{

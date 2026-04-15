@@ -48,7 +48,7 @@
       <div class="card flex items-center justify-between">
 
         <div class="flex items-center gap-3">
-          <div class="dot" :class="serviceStatus"></div>
+          <div class="dot" :class="statusColor"></div>
 
           <div>
             <div class="font-semibold">Estado Fail2Ban</div>
@@ -56,12 +56,6 @@
               {{ serviceStatus }}
             </div>
           </div>
-        </div>
-
-        <div class="flex gap-2">
-          <button class="btn green" @click="startService">▶ Iniciar</button>
-          <button class="btn yellow" @click="restartService">⟳ Reiniciar</button>
-          <button class="btn red" @click="stopService">■ Parar</button>
         </div>
 
       </div>
@@ -91,11 +85,7 @@
 
               <td>
                 <div class="flex flex-wrap gap-1">
-                  <span
-                    v-for="ip in jail.banned"
-                    :key="ip"
-                    class="ip"
-                  >
+                  <span v-for="ip in jail.banned" :key="ip" class="ip">
                     {{ ip }}
                     <button class="unban" @click="unbanIP(jail.jail, ip)">
                       ✕
@@ -136,19 +126,56 @@ const chart = ref(null)
 
 const socket = io('http://192.168.1.137:3000')
 
+let clockInterval = null
+
+/* ---------------- CLOCK ---------------- */
 const updateClock = () => {
   clock.value = new Date().toLocaleTimeString()
 }
 
+/* ---------------- STATUS COLOR (FIX CLAVE) ---------------- */
+const statusColor = computed(() => {
+  switch (serviceStatus.value) {
+    case 'running':
+      return 'running'
+    case 'stopped':
+      return 'stopped'
+    case 'error':
+      return 'error'
+    default:
+      return 'loading'
+  }
+})
+
+/* ---------------- TOTAL ---------------- */
 const totalBanned = computed(() =>
   jails.value.reduce((a, b) => a + b.bannedCount, 0)
 )
 
-onMounted(() => {
-  updateClock()
-  setInterval(updateClock, 1000)
-})
+/* ---------------- CHART SAFE ---------------- */
+const updateChart = (data) => {
+  const ctx = document.getElementById('chart')
+  if (!ctx) return
 
+  if (chart.value) {
+    chart.value.destroy()
+    chart.value = null
+  }
+
+  chart.value = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(d => d.jail),
+      datasets: [{
+        label: 'IPs bloqueadas',
+        data: data.map(d => d.bannedCount),
+        backgroundColor: '#dc2626'
+      }]
+    }
+  })
+}
+
+/* ---------------- SOCKET ---------------- */
 socket.on('status', (data) => {
   jails.value = data
   updateChart(data)
@@ -157,8 +184,24 @@ socket.on('status', (data) => {
 socket.on('alert', () => {
   alerts.value++
 })
+
+/* ---------------- LIFECYCLE ---------------- */
+onMounted(() => {
+  updateClock()
+  clockInterval = setInterval(updateClock, 1000)
+})
+
+onUnmounted(() => {
+  clearInterval(clockInterval)
+  socket.disconnect()
+})
 </script>
 <style scoped>
+.dot.loading { background: #94a3b8; }
+.dot.running { background: #22c55e; }
+.dot.stopped { background: #ef4444; }
+.dot.error { background: #f59e0b; }
+
 .header {
   margin-bottom: 16px;
 }

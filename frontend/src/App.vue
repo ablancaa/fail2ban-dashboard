@@ -6,8 +6,10 @@
         <img src="../src/assets/Fail2ban_logo.png" class="w-20 h-20" />
         Fail2Ban Dashboard
       </h1>
+        <NavBar />
       <!-- Control Fail2Ban -->
       <div
+    
         class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-4 flex items-center justify-between flex-wrap gap-3">
 
         <div class="flex items-center gap-2">
@@ -124,6 +126,7 @@ import { Play, RotateCw, Square, OctagonMinus } from 'lucide-vue-next'
 import JailConfig from './components/JailConfig.vue'
 //import { toRaw } from 'vue'
 import { nextTick } from 'vue'
+import NavBar from './components/NavBar.vue'
 
 const serviceStatus = ref('loading')
 const uptimeChart = ref(null)

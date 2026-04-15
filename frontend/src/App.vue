@@ -71,7 +71,7 @@
           </thead>
           <tbody>
             <tr v-for="jail in jails" :key="jail.jail" class="border-b">
-              <td class="p-2 font-medium"><ClipboardPaste /> {{ jail.jail }}</td>
+              <td class="p-2 font-medium"><ClipboardPaste size="5" class="mr-1"/> {{ jail.jail }}</td>
               <td class="p-2">{{ jail.bannedCount }}</td>
               <td class="p-2">
                 <div class="flex flex-wrap gap-1">

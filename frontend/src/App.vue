@@ -61,9 +61,9 @@
  
 </div>
 
-<div class="flex items-center gap-2 bg-white rounded-full font-mono">
+<div class="flex items-center gap-2 rounded-full">
   <span class="animate-pulse">🕒</span>
-  <span>{{ clock }}</span>
+  <span class="font-black">{{ clock }}</span>
       </div>
 <br/>
       <!-- Tabla de jails -->

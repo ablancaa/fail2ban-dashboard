@@ -51,7 +51,11 @@
       <div class="mb-4 text-lg font-semibold">
         Total de IPs baneadas: {{ totalBanned }}
       </div>
-
+ <!-- ⏰ reloj -->
+  <div class="mt-2 text-sm text-gray-500 flex items-center gap-2">
+    <span class="animate-pulse">🕒</span>
+    {{ clock }}
+  </div>
       <!-- Tabla de jails -->
       <div class="bg-white rounded-xl shadow p-4 mb-6 overflow-x-auto">
         <table class="w-full text-sm md:text-base">
@@ -105,7 +109,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, reactive, computed, watch } from 'vue'
 import io from 'socket.io-client'
 import Chart from 'chart.js/auto'
 import axios from 'axios'
@@ -113,9 +117,17 @@ import { Play, RotateCw, Square, OctagonMinus } from 'lucide-vue-next'
 import JailConfig from './components/JailConfig.vue'
 //import { toRaw } from 'vue'
 import { nextTick } from 'vue'
+
 const serviceStatus = ref('loading')
 const uptimeChart = ref(null)
 const uptimeData = ref([])
+const clock = ref('')
+let timer = null
+
+const updateClock = () => {
+  const now = new Date()
+  clock.value = now.toLocaleString()
+}
 
 onMounted(() => {
    if (chart.value) {
@@ -124,6 +136,12 @@ onMounted(() => {
   fetchServiceStatus()
   setInterval(fetchServiceStatus, 5000)
   updateUptimeChart()
+  updateClock()
+  timer = setInterval(updateClock, 1000)
+})
+
+onUnmounted(() => {
+  clearInterval(timer)
 })
 
 watch(serviceStatus, (newVal) => {

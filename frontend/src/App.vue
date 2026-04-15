@@ -115,6 +115,9 @@
         <canvas id="uptimeChart" height="100"></canvas>
       </div> -->
       <JailConfig />
+      <br/>
+      <Logs />
+      
     </div>
   </div>
 </template>
@@ -130,6 +133,7 @@ import JailConfig from './components/JailConfig.vue'
 import { nextTick } from 'vue'
 import { useFail2BanStore } from './stores/fail2ban'
 import NavBar from './components/NavBar.vue'
+import Logs from './components/Logs.vue'
 
 const store = useFail2BanStore()
 const serviceStatus = ref('loading')

@@ -26,6 +26,7 @@
             <span v-if="serviceStatus === 'loading'">Comprobando...</span>
           </span>
            <!-- ⏰ reloj -->
+           <br/>
   <div class="mt-2 text-sm text-gray-500 flex items-center gap-2">
     <span class="animate-pulse">🕒</span>
     {{ clock }}

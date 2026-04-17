@@ -1,17 +1,16 @@
 <template>
   <div class="min-h-screen bg-gray-100 p-4">
-  
+
     <div class="max-w-6xl mx-auto">
-<NavBar :jails="jails" />
-<br/>
+      <NavBar :jails="jails" />
+      <br />
       <h1 class="text-2xl md:text-3xl font-bold mb-4 flex items-center gap-2">
         <img src="../src/assets/Fail2ban_logo.png" class="w-20 h-20" />
         Fail2Ban Dashboard
       </h1>
-        
+
       <!-- Control Fail2Ban -->
       <div
-    
         class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-4 flex items-center justify-between flex-wrap gap-3">
 
         <div class="flex items-center gap-2">
@@ -56,16 +55,17 @@
       <!-- Total de IPs baneadas -->
       <div class="mb-4 text-lg font-semibold">
         <!-- Total de IPs baneadas: {{ totalBanned }} -->
-         <!-- ⏰ reloj -->
-            <!-- ⏰ reloj -->
- 
-</div>
+        <!-- ⏰ reloj -->
+        <!-- ⏰ reloj -->
 
-<div class="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1 rounded-full shadow text-black dark:text-white font-mono text-sm">
-  <span class="animate-pulse">🕒</span>
-  <span class="text-lg font-bold">{{ clock }}</span>
       </div>
-<br/>
+
+      <div
+        class="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1 rounded-full shadow text-black dark:text-white font-mono text-sm">
+        <span class="animate-pulse">🕒</span>
+        <span class="text-lg font-bold">{{ clock }} </span>
+      </div>
+      <br />
       <!-- Tabla de jails -->
       <div class="bg-white rounded-xl shadow p-4 mb-6 overflow-x-auto">
         <table class="w-full text-sm md:text-base">
@@ -100,9 +100,9 @@
             </tr>
           </tbody>
         </table>
-              <div class="mb-4 text-lg font-semibold">
-              <br/>
-        Total de IPs baneadas: {{ totalBanned }}
+        <div class="mb-4 text-lg font-semibold">
+          <br />
+          Total de IPs baneadas: {{ totalBanned }}
         </div>
       </div>
 
@@ -117,11 +117,11 @@
         <h2 class="font-semibold mb-2">Uptime Fail2Ban</h2>
         <canvas id="uptimeChart" height="100"></canvas>
       </div> -->
-      <br/>
+      <br />
       <Logs />
-      <br/>
+      <br />
       <JailConfig />
-      
+
     </div>
   </div>
 </template>
@@ -162,7 +162,7 @@ async function getCountry(ip) {
 
 onMounted(() => {
   store.connectSocket()
-   if (chart.value) {
+  if (chart.value) {
     chart.value.destroy()
   }
   fetchServiceStatus()
@@ -322,6 +322,7 @@ const restartService = async () => {
 }
 
 const updateUptimeChart = () => {
+  const ctx = document.getElementById('uptimeChart')
   if (!ctx) return
 
   const labels = uptimeData.value.map(d => d.time)

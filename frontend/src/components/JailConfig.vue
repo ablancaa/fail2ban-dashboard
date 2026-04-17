@@ -1,10 +1,10 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 mt-6">
+  <div class="w-full max-w-3xl mx-auto">
 
     <!-- Header desplegable -->
     <button
       @click="toggle"
-      class="w-full flex justify-between items-center"
+      class="flex items-center justify-between bg-slate-900 text-white px-4 py-3 rounded-xl shadow-md cursor-pointer w-full"
     >
       <h2 class="text-lg font-semibold">
         Configuración jail.local

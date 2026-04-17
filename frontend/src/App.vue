@@ -118,9 +118,14 @@
         <canvas id="uptimeChart" height="100"></canvas>
       </div> -->
       <br />
-      <Logs />
-      <br />
-      <JailConfig />
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div class="bg-white rounded-xl shadow p-4">
+          <Logs />
+        </div>
+        <div class="bg-white rounded-xl shadow p-4">
+          <JailConfig />
+        </div>
+      </div>
 
     </div>
   </div>

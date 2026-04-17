@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useFail2BanStore } from '../stores/fail2ban'
 
 const store = useFail2BanStore()
-const open = ref(true)
+const open = ref(false)
 
 onMounted(() => {
   store.fetchBans()

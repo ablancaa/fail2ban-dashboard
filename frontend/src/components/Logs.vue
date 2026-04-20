@@ -102,7 +102,7 @@ const bans = computed(() => store.bans || [])
             </span>
           </div>
 
-          <span class="text-xs bg-slate-200 px-2 py-1 rounded">
+          <span class="text-xs bg-slate-200 px-2 py-1 rounded color:red-500">
             ATTACK
           </span>
         </div>

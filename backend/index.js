@@ -210,7 +210,9 @@ const formatDateTime = (date) => {
 const normalizeTimestamp = (raw) => {
   if (!raw) return null
 
-  const isoMatch = raw.match(/^([0-9]{4}-[0-9]{2}-[0-9]{2})(?:[ T]([0-9]{2}:[0-9]{2}:[0-9]{2})(?:[.,][0-9]+)?)?$/)
+  const line = raw.replace(/^[^:]+:/, '').trim()
+
+  const isoMatch = line.match(/([0-9]{4}-[0-9]{2}-[0-9]{2})(?:[ T]([0-9]{2}:[0-9]{2}:[0-9]{2})(?:[.,][0-9]+)?)?/) 
   if (isoMatch) {
     const date = new Date(`${isoMatch[1]}T${isoMatch[2] || '00:00:00'}`)
     if (!Number.isNaN(date.valueOf())) {
@@ -218,7 +220,7 @@ const normalizeTimestamp = (raw) => {
     }
   }
 
-  const syslogMatch = raw.match(/^([A-Za-z]{3})\s+(\d{1,2})\s+([0-9]{2}:[0-9]{2}:[0-9]{2})/)
+  const syslogMatch = line.match(/([A-Za-z]{3})\s+(\d{1,2})\s+([0-9]{2}:[0-9]{2}:[0-9]{2})/)
   if (syslogMatch) {
     const months = {
       Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,

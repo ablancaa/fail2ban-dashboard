@@ -202,6 +202,41 @@ app.get('/api/jails-count', (req, res) => {
   })
 })
 
+const formatDateTime = (date) => {
+  const pad = (value) => String(value).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
+const normalizeTimestamp = (raw) => {
+  if (!raw) return null
+
+  const isoMatch = raw.match(/^([0-9]{4}-[0-9]{2}-[0-9]{2})(?:[ T]([0-9]{2}:[0-9]{2}:[0-9]{2})(?:[.,][0-9]+)?)?$/)
+  if (isoMatch) {
+    const date = new Date(`${isoMatch[1]}T${isoMatch[2] || '00:00:00'}`)
+    if (!Number.isNaN(date.valueOf())) {
+      return formatDateTime(date)
+    }
+  }
+
+  const syslogMatch = raw.match(/^([A-Za-z]{3})\s+(\d{1,2})\s+([0-9]{2}:[0-9]{2}:[0-9]{2})/)
+  if (syslogMatch) {
+    const months = {
+      Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+      Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11
+    }
+    const month = months[syslogMatch[1]]
+    const day = Number(syslogMatch[2])
+    const [hours, minutes, seconds] = syslogMatch[3].split(':').map(Number)
+    const year = new Date().getFullYear()
+    const date = new Date(year, month, day, hours, minutes, seconds)
+    if (!Number.isNaN(date.valueOf())) {
+      return formatDateTime(date)
+    }
+  }
+
+  return null
+}
+
 // Loc con comando sudo zgrep "Ban" /var/log/fail2ban.log*
 app.get('/api/fail2ban-bans', (req, res) => {
 
@@ -225,12 +260,11 @@ app.get('/api/fail2ban-bans', (req, res) => {
       // Apr 15 00:22:33 hostname fail2ban.actions [1234]: NOTICE [sshd] Ban 1.2.3.4
 
       const ipMatch = line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/)
-      const timeMatch = line.match(/^([0-9]{4}-[0-9]{2}-[0-9]{2}(?:[ T][0-9]{2}:[0-9]{2}:[0-9]{2}(?:[.,][0-9]+)?)?)/) ||
-                        line.match(/^([A-Za-z]{3}\s+\d+\s+[0-9]{2}:[0-9]{2}:[0-9]{2})/)
+      const timestamp = normalizeTimestamp(line)
 
       return ipMatch ? {
         ip: ipMatch[1],
-        timestamp: timeMatch ? timeMatch[1] : null,
+        timestamp,
         raw: line
       } : null
 

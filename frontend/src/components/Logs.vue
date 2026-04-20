@@ -13,6 +13,43 @@ const toggle = () => {
   open.value = !open.value
 }
 
+const formatTimestamp = (timestamp) => {
+  if (!timestamp) return ''
+
+  const isoMatch = timestamp.match(/^([0-9]{4}-[0-9]{2}-[0-9]{2})(?:[ T]([0-9]{2}:[0-9]{2}:[0-9]{2})(?:[.,][0-9]+)?)?$/)
+  if (isoMatch) {
+    const date = new Date(`${isoMatch[1]}T${isoMatch[2] || '00:00:00'}`)
+    if (!isNaN(date)) {
+      return new Intl.DateTimeFormat('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      }).format(date)
+    }
+  }
+
+  const syslogMatch = timestamp.match(/^([A-Za-z]{3})\s+(\d{1,2})\s+([0-9]{2}:[0-9]{2}:[0-9]{2})$/)
+  if (syslogMatch) {
+    const year = new Date().getFullYear()
+    const date = new Date(`${syslogMatch[1]} ${syslogMatch[2]} ${year} ${syslogMatch[3]}`)
+    if (!isNaN(date)) {
+      return new Intl.DateTimeFormat('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      }).format(date)
+    }
+  }
+
+  return timestamp
+}
+
 /* 🔥 blindaje por si store aún no está listo */
 const bans = computed(() => store.bans || [])
 </script>
@@ -61,7 +98,7 @@ const bans = computed(() => store.bans || [])
               🚫 {{ b.ip }}
             </span>
             <span v-if="b.timestamp" class="text-xs text-slate-500 dark:text-slate-400">
-              {{ b.timestamp }}
+              {{ formatTimestamp(b.timestamp) }}
             </span>
           </div>
 

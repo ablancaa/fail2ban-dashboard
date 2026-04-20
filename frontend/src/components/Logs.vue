@@ -53,12 +53,17 @@ const bans = computed(() => store.bans || [])
 
         <div
           v-for="b in bans"
-          :key="b.ip"
+          :key="b.ip + b.timestamp"
           class="flex items-center justify-between px-4 py-3 border-b hover:bg-slate-50 dark:hover:bg-slate-800"
         >
-          <span class="font-mono text-sm">
-            🚫 {{ b.ip }}
-          </span>
+          <div class="flex flex-col gap-1">
+            <span class="font-mono text-sm">
+              🚫 {{ b.ip }}
+            </span>
+            <span v-if="b.timestamp" class="text-xs text-slate-500 dark:text-slate-400">
+              {{ b.timestamp }}
+            </span>
+          </div>
 
           <span class="text-xs bg-slate-200 px-2 py-1 rounded">
             ATTACK

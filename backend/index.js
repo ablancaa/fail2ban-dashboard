@@ -220,12 +220,17 @@ app.get('/api/fail2ban-bans', (req, res) => {
     const bans = lines.map(line => {
 
       // ejemplo línea:
-      // 2026-04-15 fail2ban.actions [1234]: NOTICE [sshd] Ban 1.2.3.4
+      // 2026-04-15 00:22:33,123 fail2ban.actions [1234]: NOTICE [sshd] Ban 1.2.3.4
+      // o con formato syslog:
+      // Apr 15 00:22:33 hostname fail2ban.actions [1234]: NOTICE [sshd] Ban 1.2.3.4
 
-      const match = line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/)
+      const ipMatch = line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/)
+      const timeMatch = line.match(/^([0-9]{4}-[0-9]{2}-[0-9]{2}(?:[ T][0-9]{2}:[0-9]{2}:[0-9]{2}(?:[.,][0-9]+)?)?)/) ||
+                        line.match(/^([A-Za-z]{3}\s+\d+\s+[0-9]{2}:[0-9]{2}:[0-9]{2})/)
 
-      return match ? {
-        ip: match[1],
+      return ipMatch ? {
+        ip: ipMatch[1],
+        timestamp: timeMatch ? timeMatch[1] : null,
         raw: line
       } : null
 

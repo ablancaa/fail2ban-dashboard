@@ -147,9 +147,11 @@ app.get('/api/jail-config', (req, res) => {
 })
 
 /* WebSocket tiempo real */
+const globalNotifiedIPs = new Set(); // IPs ya notificadas globalmente
+
 io.on('connection', (socket) => {
 
-const lastBanned = {}; // para guardar IPs ya notificadas
+const lastBanned = {}; // para guardar IPs del ciclo anterior
 
 const sendStatus = () => {
   getJails((jails) => {
@@ -165,9 +167,16 @@ const sendStatus = () => {
     jails.forEach(jail => {
       getJailStatus(jail, (data) => {
 
-        // comprobar IPs nuevas
+        // comprobar IPs nuevas (solo las que no se han notificado antes)
         const prev = lastBanned[jail.jail] || [];
-        const newIPs = data.banned.filter(ip => !prev.includes(ip));
+        const newIPs = data.banned.filter(ip => {
+          const alreadyNotified = globalNotifiedIPs.has(`${jail.jail}:${ip}`);
+          if (!alreadyNotified) {
+            globalNotifiedIPs.add(`${jail.jail}:${ip}`);
+          }
+          return !alreadyNotified && !prev.includes(ip);
+        });
+        
         if (newIPs.length > 0) {
           socket.emit('alert', { jail: jail.jail, ips: newIPs });
         }

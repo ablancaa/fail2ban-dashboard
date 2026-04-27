@@ -27,7 +27,7 @@ export const useFail2BanStore = defineStore('fail2ban', () => {
     })
 
     socket.on('alert', () => {
-      alerts.value++
+      alerts.value
     })
   }
 

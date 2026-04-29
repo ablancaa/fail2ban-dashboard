@@ -146,7 +146,7 @@
                       </span>
                       <!-- Mensaje cuando no hay IPs baneadas -->
                       <span v-if="jail.banned.length === 0" class="text-gray-500 text-xs">
-                        <OctagonMinus size="16" class="mr-1" />
+                        <OctagonMinus color="#FF2400" size="16" class="mr-1" />
                       </span>
                     </div>
                   </td>

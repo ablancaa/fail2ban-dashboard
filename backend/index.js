@@ -260,50 +260,45 @@ app.get("/api/fail2ban-bans", async (req, res) => {
 
     const lines = stdout.split("\n").filter(Boolean);
 
-    const uniqueIPs = new Set();
-    const parsedLines = [];
+    // 🔥 IPs únicas
+    const uniqueIPs = [...new Set(
+      lines
+        .map(line => line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/)?.[1])
+        .filter(Boolean)
+    )];
 
-    for (const line of lines) {
-      const ipMatch = line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/);
+    // 🌍 GEO para todas las IPs (con cache interna getGeo)
+    const geoMap = {};
 
-      if (!ipMatch) continue;
+    await Promise.all(
+      uniqueIPs.map(async (ip) => {
+        geoMap[ip] = await getGeo(ip);
+      })
+    );
 
-      const ip = ipMatch[1];
-      uniqueIPs.add(ip);
+    // 🧱 construir bans enriquecidos
+    const bans = lines
+      .map(line => {
+        const ipMatch = line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/);
+        const timeMatch = line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
 
-      // 🔥 MEJOR PARSER DE FECHA FAIL2BAN
-      const timeMatch =
-        line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/) ||
-        line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+        if (!ipMatch) return null;
 
-      parsedLines.push({
-        ip,
-        timestamp: timeMatch ? timeMatch[1] : new Date().toISOString(),
-        raw: line,
-      });
-    }
+        const ip = ipMatch[1];
 
-    // 🔥 GEO CON CACHE
-    const geoResults = {};
-    for (const ip of uniqueIPs) {
-      geoResults[ip] = await getGeo(ip);
-    }
-
-    const bans = parsedLines
-      .map((b) => ({
-        ip: b.ip,
-        geo: geoResults[b.ip] || {
-          country: "Unknown",
-          countryCode: "XX",
-        },
-        timestamp: b.timestamp,
-        raw: b.raw,
-      }))
+        return {
+          ip,
+          geo: geoMap[ip] || null,
+          timestamp: timeMatch ? timeMatch[1] : null,
+          raw: line
+        };
+      })
+      .filter(Boolean)
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     res.json({
       total: bans.length,
-      bans,
+      bans
     });
   });
 });

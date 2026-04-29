@@ -246,21 +246,37 @@ app.get("/api/service-status", (req, res) => {
 });
 
 // Logs bans
-app.get("/api/fail2ban-bans", (req, res) => {
-  exec(`zgrep "Ban" /var/log/fail2ban.log*`, (err, stdout) => {
+app.get("/api/fail2ban-bans", async (req, res) => {
+  exec(`zgrep "Ban" /var/log/fail2ban.log*`, async (err, stdout) => {
     if (err) {
       return res.status(500).json({ error: err.message, bans: [] });
     }
 
     const lines = stdout.split("\n").filter(Boolean);
 
+    // Extraer IPs únicas
+    const uniqueIPs = new Set();
+    lines.forEach((line) => {
+      const ipMatch = line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/);
+      if (ipMatch) uniqueIPs.add(ipMatch[1]);
+    });
+
+    // Obtener geolocalización para cada IP
+    const geoResults = {};
+    for (const ip of uniqueIPs) {
+      geoResults[ip] = await getGeo(ip);
+    }
+
     const bans = lines
       .map((line) => {
         const ipMatch = line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/);
+        const timeMatch = line.match(/(\w{3}\s+\d+\s+\d+:\d+:\d+)/);
 
         return ipMatch
           ? {
               ip: ipMatch[1],
+              geo: geoResults[ipMatch[1]] || null,
+              timestamp: timeMatch ? timeMatch[1] : null,
               raw: line,
             }
           : null;

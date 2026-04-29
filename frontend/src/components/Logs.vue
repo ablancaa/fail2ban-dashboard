@@ -88,6 +88,7 @@ const getFlagEmoji = (code) => {
 
             <span class="text-xs text-slate-500">
               {{ formatTimestamp(b.timestamp) }}
+              {{ b }} {{ b.timestamp ? "" : "(fecha no disponible)" }}
             </span>
           </div>
 

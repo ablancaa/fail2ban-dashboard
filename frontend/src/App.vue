@@ -115,7 +115,12 @@
                   >
                     <!-- Bandera y país -->
                     <span v-if="geoData[ip]" class="mr-1">
-                      {{ getFlagEmoji(geoData[ip].countryCode) }} -
+                      <img
+                        :src="`https://flagcdn.com/24x18/${geoData[
+                          ip
+                        ].countryCode.toLowerCase()}.png`"
+                      />
+                      <!-- {{ getFlagEmoji(geoData[ip].countryCode) }} - -->
                       {{ geoData[ip].country }}
                     </span>
                     {{ ip }}
@@ -155,11 +160,13 @@
 
       <!-- ==================== COMPONENTES ADICIONALES ==================== -->
       <!-- Grid de 2 columnas: Logs y Configuración -->
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div class="grid grid-cols-2 gap-3 md:grid-cols-2">
         <!-- Componente Logs: muestra el historial de logs -->
         <div class="bg-white rounded-xl shadow p-4">
           <Logs />
+          <LogsHistory />
         </div>
+
         <!-- Componente JailConfig: muestra la configuración de los jails -->
         <div class="bg-white rounded-xl shadow p-4">
           <JailConfig />
@@ -179,6 +186,7 @@ import { useFail2BanStore } from "./stores/fail2ban";
 import NavBar from "./components/NavBar.vue";
 import Logs from "./components/Logs.vue";
 import JailConfig from "./components/JailConfig.vue";
+import LogsHistory from "./components/LogsHistory.vue";
 
 const store = useFail2BanStore();
 

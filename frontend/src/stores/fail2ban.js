@@ -38,6 +38,8 @@ export const useFail2BanStore = defineStore('fail2ban', () => {
     jails.value.filter(j => !j.error).length
   )
 
+  const logs = ref([])
+
   // -----------------------------
   // CONEXIÓN Y EVENTOS SOCKET.IO
   // -----------------------------
@@ -57,32 +59,33 @@ export const useFail2BanStore = defineStore('fail2ban', () => {
     })
 
     // Evento: alerta en tiempo real (nuevo ban detectado)
-  socket.on('alert', (data) => {
-  console.log('Store: Alerta recibida', data)
+  socket.on("alert", (data) => {
+  console.log("Alert recibida:", data)
 
   alerts.value = data.ips?.length || 0
 
-  if (data.jail && Array.isArray(data.ips)) {
+  if (!data.jail || !Array.isArray(data.ips)) return
 
-    const cleanIPs = data.ips.map(item => {
-      if (typeof item === "string") return item
-      if (typeof item === "object") return item.ip
-      return null
-    }).filter(Boolean)
+  const cleanIPs = data.ips.map(i => i.ip).filter(Boolean)
 
-    newlyBanned.value[data.jail] = cleanIPs
+  newlyBanned.value[data.jail] = cleanIPs
 
-    // 🔥 AQUÍ ESTÁ LA CLAVE: APLANAR
-    data.ips.forEach(ipData => {
-      logs.value.unshift({
-        ip: ipData.ip,
-        geo: ipData.geo || null,
-        jail: data.jail,
-        timestamp: new Date().toISOString(),
-        country: ipData.geo?.country || "Unknown",
-        countryCode: ipData.geo?.countryCode || "XX"
-      })
+  data.ips.forEach(item => {
+    logs.value.unshift({
+      ip: item.ip,
+      geo: item.geo || {
+        country: "Unknown",
+        countryCode: "XX"
+      },
+      jail: data.jail,
+      timestamp: new Date().toISOString(),
+      raw: null
     })
+  })
+
+  // 🔥 limitar memoria
+  if (logs.value.length > 200) {
+    logs.value.length = 200
   }
 })
   }
@@ -110,15 +113,26 @@ export const useFail2BanStore = defineStore('fail2ban', () => {
 
   // Función para obtener el historial desde el backend HTTP
   const fetchBans = async () => {
-    const res = await axios.get('http://192.168.1.137:3000/api/fail2ban-bans')
+  try {
+    const res = await axios.get(
+      'http://192.168.1.137:3000/api/fail2ban-bans'
+    )
 
-    // Normaliza los datos recibidos
     bans.value = res.data.bans.map(b => ({
       ip: b.ip,
       timestamp: b.timestamp,
-      raw: b.raw
+      raw: b.raw,
+
+      // 🔥 IMPORTANTE: mantener geo
+      geo: b.geo || {
+        country: "Unknown",
+        countryCode: "XX"
+      }
     }))
-  } 
+  } catch (err) {
+    console.error("fetchBans error:", err)
+  }
+}
 
   // -----------------------------
   // EXPOSICIÓN DEL STORE
@@ -132,6 +146,7 @@ export const useFail2BanStore = defineStore('fail2ban', () => {
     totalBanned,
     activeJails,
     newlyBanned,
+    logs,
 
     connectSocket,
     refresh,

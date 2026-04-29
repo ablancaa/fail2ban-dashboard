@@ -6,6 +6,7 @@ import cors from "cors";
 import axios from "axios";
 
 console.log("🔥 BACKEND GEO LOADED CORRECTLY");
+
 // =========================
 // APP SETUP
 // =========================
@@ -15,10 +16,7 @@ app.use(express.json());
 
 const server = createServer(app);
 const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
+  cors: { origin: "*", methods: ["GET", "POST"] },
 });
 
 // =========================
@@ -27,9 +25,13 @@ const io = new Server(server, {
 const geoCache = new Map();
 
 async function getGeo(ip) {
-  if (!ip) return { ip, country: "Unknown", countryCode: "XX" };
+  if (!ip) {
+    return { ip, country: "Unknown", countryCode: "XX", city: "" };
+  }
 
-  if (geoCache.has(ip)) return geoCache.get(ip);
+  if (geoCache.has(ip)) {
+    return geoCache.get(ip);
+  }
 
   try {
     const res = await axios.get(`http://ip-api.com/json/${ip}`, {
@@ -49,13 +51,8 @@ async function getGeo(ip) {
 
     geoCache.set(ip, data);
     return data;
-
   } catch (err) {
-
-    // 🔥 DETECTAR RATE LIMIT
-    if (err.response?.status === 429) {
-      console.warn("⚠️ Rate limit alcanzado, usando fallback");
-    }
+    console.warn("⚠️ Geo fallback for:", ip);
 
     const fallback = {
       ip,
@@ -64,30 +61,32 @@ async function getGeo(ip) {
       city: "",
     };
 
-    geoCache.set(ip, fallback); // 👈 IMPORTANTE: cache también errores
+    geoCache.set(ip, fallback);
     return fallback;
   }
 }
+
 // =========================
-// 🌍 GEO ENDPOINT
+// 🚫 GEO ENDPOINT (FIXED)
 // =========================
 app.get("/api/geo/:ip", async (req, res) => {
   try {
-    const { ip } = req.params;
- 
-    const response = await axios.get(`http://ip-api.com/json/${ip}`, {
-      timeout: 3000,
-    });
-
-    res.json(response.data);
+    const geo = await getGeo(req.params.ip);
+    res.json(geo);
   } catch (error) {
     console.error("Geo error backend:", error.message);
-    res.status(500).json({ error: "Geo lookup failed" });
+
+    res.json({
+      ip: req.params.ip,
+      country: "Unknown",
+      countryCode: "XX",
+      city: "",
+    });
   }
 });
 
 // =========================
-// 🚀 START SERVER
+// FAIL2BAN HELPERS
 // =========================
 function getJails() {
   return new Promise((resolve) => {
@@ -147,10 +146,10 @@ io.on("connection", (socket) => {
 
       if (newIPs.length > 0) {
         const enriched = await Promise.all(
-          newIPs.map(async (ip) => {
-            const geo = await getGeo(ip);
-            return { ip, geo };
-          })
+          newIPs.map(async (ip) => ({
+            ip,
+            geo: await getGeo(ip),
+          }))
         );
 
         socket.emit("alert", {
@@ -183,47 +182,6 @@ app.get("/api/jails", async (req, res) => {
   res.json(jails);
 });
 
-// Jail config
-app.get("/api/jail-config", async (req, res) => {
-  const { jail } = req.query;
-  
-  // Si no se especifica jail, devolver configuración de jail.local
-  if (!jail) {
-    exec("cat /etc/fail2ban/jail.local", (err, stdout) => {
-      if (err) {
-        // Intentar con jail.conf si no existe jail.local
-        exec("cat /etc/fail2ban/jail.conf", (err2, stdout2) => {
-          if (err2) return res.status(500).json({ error: "No se encontró configuración" });
-          res.json({ config: stdout2 });
-        });
-      } else {
-        res.json({ config: stdout });
-      }
-    });
-    return;
-  }
-
-  exec(`fail2ban-client get ${jail} ban-time`, (err, stdout) => {
-    if (err) return res.status(500).json({ error: err.message });
-    
-    const banTimeMatch = stdout.match(/(\d+)/);
-    const banTime = banTimeMatch ? parseInt(banTimeMatch[1]) : 0;
-    
-    exec(`fail2ban-client get ${jail} maxretry`, (err2, stdout2) => {
-      if (err2) return res.status(500).json({ error: err2.message });
-      
-      const maxRetryMatch = stdout2.match(/(\d+)/);
-      const maxRetry = maxRetryMatch ? parseInt(maxRetryMatch[1]) : 0;
-      
-      res.json({
-        jail,
-        banTime,
-        maxRetry
-      });
-    });
-  });
-});
-
 // Unban IP
 app.post("/api/unban", (req, res) => {
   const { jail, ip } = req.body;
@@ -234,7 +192,6 @@ app.post("/api/unban", (req, res) => {
 
   exec(`fail2ban-client set ${jail} unbanip ${ip}`, (err) => {
     if (err) return res.status(500).json({ error: err.message });
-
     res.json({ success: true });
   });
 });
@@ -260,25 +217,21 @@ app.get("/api/fail2ban-bans", async (req, res) => {
 
     const lines = stdout.split("\n").filter(Boolean);
 
-    // 🔥 1. Obtener IPs únicas
     const uniqueIPs = new Set();
     lines.forEach((line) => {
       const ipMatch = line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/);
       if (ipMatch) uniqueIPs.add(ipMatch[1]);
     });
 
-    // 🔥 2. Obtener GEO (con cache interno)
     const geoResults = {};
     for (const ip of uniqueIPs) {
       geoResults[ip] = await getGeo(ip);
     }
 
-    // 🔥 3. Construir respuesta final
     const bans = lines
       .map((line) => {
         const ipMatch = line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/);
 
-        // ✅ FORMATO REAL FAIL2BAN: 2026-04-08 02:46:31,044
         const timeMatch = line.match(
           /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/
         );
@@ -286,17 +239,15 @@ app.get("/api/fail2ban-bans", async (req, res) => {
         if (!ipMatch) return null;
 
         const ip = ipMatch[1];
-        const timestamp = timeMatch ? timeMatch[1] : null;
 
         return {
           ip,
-          geo: geoResults[ip] || null,
-          timestamp,
+          geo: geoResults[ip],
+          timestamp: timeMatch ? timeMatch[1] : null,
           raw: line,
         };
       })
       .filter(Boolean)
-      // 🔥 4. Ordenar por fecha (más reciente primero)
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     res.json({

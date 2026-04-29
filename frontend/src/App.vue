@@ -89,81 +89,86 @@
       <br />
       <!-- ==================== TABLA DE JAILS ==================== -->
       <!-- Tabla que muestra los jails y sus IPs bloqueadas -->
-      <div class="bg-white rounded-xl shadow p-4 mb-6 overflow-x-auto">
-        <table class="w-full text-sm md:text-base">
-          <!-- Encabezados de la tabla -->
-          <thead>
-            <tr class="border-b">
-              <th class="text-left p-2">Jail</th>
-              <th class="text-left p-2">IPs bloqueadas</th>
-              <th class="text-left p-2">Lista IPs</th>
-            </tr>
-          </thead>
-          <!-- Cuerpo de la tabla: fila por cada jail -->
-          <tbody>
-            <tr v-for="jail in store.jails" :key="jail.jail" class="border-b">
-              <!-- Nombre del jail -->
-              <td class="p-2 font-medium">{{ jail.jail }}</td>
-              <!-- Cantidad de IPs baneadas -->
-              <td class="p-2">{{ jail.bannedCount }}</td>
-              <!-- Lista de IPs con botón para desbloquear -->
-              <td class="p-2">
-                <div class="flex flex-wrap gap-1">
-                  <!-- Itera sobre cada IP baneada -->
-                  <span
-                    v-for="ip in jail.banned"
-                    :key="ip"
-                    :class="[
-                      'bg-red-100 text-red-700 px-2 py-1 rounded text-xs flex items-center transition',
-                      // Resalta IPs recientemente baneadas con color amarillo
-                      newlyBanned[jail.jail]?.includes(ip)
-                        ? 'bg-yellow-200 text-yellow-800 animate-pulse'
-                        : '',
-                    ]"
-                  >
-                    <!-- Bandera y país -->
-                    <span v-if="geoData[ip]" class="mr-1">
-                      <img
-                        :src="`https://flagcdn.com/24x18/${geoData[
-                          ip
-                        ].countryCode.toLowerCase()}.png`"
-                      />
-                      <!-- {{ getFlagEmoji(geoData[ip].countryCode) }} - -->
-                      {{ geoData[ip].country }}
-                    </span>
-                    {{ ip }}
-                    <!-- Botón para desbloquear (Unban) -->
-                    <button
-                      @click="unbanIP(jail.jail, ip)"
-                      class="ml-1 bg-red-500 text-white rounded px-1 py-0.5 text-[0.65rem] hover:bg-red-600"
-                    >
-                      Unban
-                    </button>
-                  </span>
-                  <!-- Mensaje cuando no hay IPs baneadas -->
-                  <span v-if="jail.banned.length === 0" class="text-gray-500 text-xs">
-                    <OctagonMinus size="16" class="mr-1" />
-                  </span>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <!-- Total de IPs baneadas -->
-        <div class="mb-4 text-lg font-semibold">
-          <br />
-          Total de IPs baneadas: {{ totalBanned }}
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-6">
+        <!-- TABLA -->
+        <div class="bg-white rounded-xl shadow p-4 overflow-x-auto">
+          <!-- TU TABLA COMPLETA AQUÍ -->
+          <div class="bg-white rounded-xl shadow p-4 mb-6 overflow-x-auto">
+            <table class="w-full text-sx md:text-base">
+              <!-- Encabezados de la tabla -->
+              <thead>
+                <tr class="border-b">
+                  <th class="text-left p-1">Jail</th>
+                  <th class="text-left p-1">IPs bloqueadas</th>
+                  <th class="text-left p-1">Lista IPs</th>
+                </tr>
+              </thead>
+              <!-- Cuerpo de la tabla: fila por cada jail -->
+              <tbody>
+                <tr v-for="jail in store.jails" :key="jail.jail" class="border-b">
+                  <!-- Nombre del jail -->
+                  <td class="p-2 font-medium">{{ jail.jail }}</td>
+                  <!-- Cantidad de IPs baneadas -->
+                  <td class="p-2">{{ jail.bannedCount }}</td>
+                  <!-- Lista de IPs con botón para desbloquear -->
+                  <td class="p-2">
+                    <div class="flex flex-wrap gap-1">
+                      <!-- Itera sobre cada IP baneada -->
+                      <span
+                        v-for="ip in jail.banned"
+                        :key="ip"
+                        :class="[
+                          'bg-red-100 text-red-700 px-2 py-1 rounded text-xs flex items-center transition',
+                          // Resalta IPs recientemente baneadas con color amarillo
+                          newlyBanned[jail.jail]?.includes(ip)
+                            ? 'bg-yellow-200 text-yellow-800 animate-pulse'
+                            : '',
+                        ]"
+                      >
+                        <!-- Bandera y país -->
+                        <span v-if="geoData[ip]" class="mr-1">
+                          <img
+                            :src="`https://flagcdn.com/24x18/${geoData[
+                              ip
+                            ].countryCode.toLowerCase()}.png`"
+                          />
+                          <!-- {{ getFlagEmoji(geoData[ip].countryCode) }} - -->
+                          {{ geoData[ip].country }}
+                        </span>
+                        {{ ip }}
+                        <!-- Botón para desbloquear (Unban) -->
+                        <button
+                          @click="unbanIP(jail.jail, ip)"
+                          class="ml-1 bg-red-500 text-white rounded px-1 py-0.5 text-[0.65rem] hover:bg-red-600"
+                        >
+                          Unban
+                        </button>
+                      </span>
+                      <!-- Mensaje cuando no hay IPs baneadas -->
+                      <span v-if="jail.banned.length === 0" class="text-gray-500 text-xs">
+                        <OctagonMinus size="16" class="mr-1" />
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="mb-4 text-lg font-semibold">
+            Total de IPs baneadas: {{ totalBanned }}
+          </div>
+        </div>
+
+        <!-- GRÁFICO -->
+        <div class="bg-white rounded-xl shadow p-4">
+          <h2 class="font-semibold mb-2">IPs bloqueadas por Jail</h2>
+
+          <div class="h-64">
+            <canvas id="chart"></canvas>
+          </div>
         </div>
       </div>
 
-      <!-- ==================== GRÁFICO ==================== -->
-      <!-- Gráfico de barras con las IPs bloqueadas por cada jail -->
-      <div class="bg-white rounded-xl shadow p-4">
-        <h2 class="font-semibold mb-2">IPs bloqueadas por Jail</h2>
-        <div class="h-64">
-          <canvas id="chart"></canvas>
-        </div>
-      </div>
       <br />
       <!-- ==================== COMPONENTES ADICIONALES ==================== -->
       <!-- Grid de 2 columnas: Logs y Configuración -->

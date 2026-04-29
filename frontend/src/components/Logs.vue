@@ -3,10 +3,8 @@ import { ref, computed, onMounted } from "vue";
 import { useFail2BanStore } from "../stores/fail2ban";
 
 const store = useFail2BanStore();
-
 const open = ref(false);
 
-// SOLO DATOS DEL STORE
 const bans = computed(() => store.bans || []);
 
 onMounted(() => {
@@ -17,25 +15,27 @@ const toggle = () => {
   open.value = !open.value;
 };
 
+// 📅 Formateo seguro de fecha Fail2Ban
 const formatTimestamp = (timestamp) => {
-  if (!timestamp) return "";
+  if (!timestamp) return "Fecha no disponible";
 
   const date = new Date(timestamp);
-  if (!isNaN(date)) {
-    return new Intl.DateTimeFormat("es-ES", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    }).format(date);
+
+  if (isNaN(date.getTime())) {
+    return timestamp; // fallback si no parsea
   }
 
-  return timestamp;
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(date);
 };
 
-// 🔥 bandera desde countryCode que viene del backend
+// 🌍 bandera
 const getFlagEmoji = (code) => {
   if (!code) return "🌍";
   return code
@@ -73,22 +73,22 @@ const getFlagEmoji = (code) => {
           class="flex items-center justify-between px-4 py-3 border-b"
         >
           <div class="flex flex-col gap-1">
-            <span class="font-mono text-sm flex items-center gap-2">
-              <!-- 🔥 BANDERA DESDE BACKEND -->
+            <!-- IP + bandera + país -->
+            <div class="flex items-center gap-2 font-mono text-sm">
               <span class="text-lg">
                 {{ getFlagEmoji(b.geo?.countryCode) }}
               </span>
 
               <span>{{ b.ip }}</span>
 
-              <span v-if="b.geo?.country" class="text-xs text-slate-500">
-                {{ b.geo.country }}
+              <span class="text-xs text-slate-500">
+                {{ b.geo?.country || "Unknown" }}
               </span>
-            </span>
+            </div>
 
+            <!-- FECHA -->
             <span class="text-xs text-slate-500">
-              {{ formatTimestamp(b.timestamp) }}
-              {{ b }} {{ b.timestamp ? "" : "(fecha no disponible)" }}
+              🕒 {{ formatTimestamp(b.timestamp) }}
             </span>
           </div>
 

@@ -4,7 +4,7 @@
     <!-- Contenedor centrado con ancho máximo -->
     <div class="max-w-6xl mx-auto">
       <!-- NavBar: componente de navegación con los jails -->
-      <NavBar :jails="jails" />
+      <NavBar :jails="store.jails" />
       <br />
 
       <!-- Título principal con logo -->
@@ -93,7 +93,7 @@
           </thead>
           <!-- Cuerpo de la tabla: fila por cada jail -->
           <tbody>
-            <tr v-for="jail in jails" :key="jail.jail" class="border-b">
+            <tr v-for="jail in store.jails" :key="jail.jail" class="border-b">
               <!-- Nombre del jail -->
               <td class="p-2 font-medium">{{ jail.jail }}</td>
               <!-- Cantidad de IPs baneadas -->
@@ -113,6 +113,11 @@
                         : '',
                     ]"
                   >
+                    <!-- Bandera y país -->
+                    <span v-if="geoData[ip]" class="mr-1">
+                      {{ getFlagEmoji(geoData[ip].countryCode) }} -
+                      {{ geoData[ip].country }}
+                    </span>
                     {{ ip }}
                     <!-- Botón para desbloquear (Unban) -->
                     <button
@@ -165,331 +170,167 @@
 </template>
 
 <script setup>
-// ==================== IMPORTACIONES ====================
-// Vue: funciones reactivas para gestionar estado
-import { ref, onMounted, onUnmounted, reactive, computed, watch, nextTick } from "vue";
-
-// Iconos de Lucide (biblioteca de iconos)
+import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 import { Play, RotateCw, Square, OctagonMinus } from "lucide-vue-next";
-
-// Socket.io: cliente WebSocket para comunicación en tiempo real
-import io from "socket.io-client";
-
-// Chart.js: librería para generar gráficos
 import Chart from "chart.js/auto";
-
-// Axios: cliente HTTP para hacer peticiones REST
 import axios from "axios";
-
-// Pinia: store para gestionar estado global
 import { useFail2BanStore } from "./stores/fail2ban";
 
-// Componentes Vue
 import NavBar from "./components/NavBar.vue";
 import Logs from "./components/Logs.vue";
 import JailConfig from "./components/JailConfig.vue";
 
-// ==================== VARIABLES REACTIVAS ====================
-// alerts: contador de alertas recibidas
-const alerts = ref(0);
-// store: instancia del store de Pinia
 const store = useFail2BanStore();
-// serviceStatus: estado actual del servicio (loading/running/stopped/error)
+
+// ================= STATE =================
 const serviceStatus = ref("loading");
-// uptimeChart: referencia al gráfico de uptime
-const uptimeChart = ref(null);
-// uptimeData: datos históricos del uptime
-const uptimeData = ref([]);
-// clock: cadena con la fecha/hora actual
 const clock = ref("");
-// timer: referencia al intervalo del reloj
-let timer = null;
-// cache: almacenamiento temporal para resultados de geolocalización IP
-const cache = {};
+const chart = ref(null);
 
-// ==================== FUNCIONES AUXILIARES ====================
-// getCountry: obtiene información del país de una IP usando ip-api.com
-async function getCountry(ip) {
-  if (cache[ip]) return cache[ip]; // Si ya está en cache, retorna
+// 🔥 GEO SIMPLE (OBJETO NORMAL, SIN MAP, SIN PROBLEMAS)
+const geoData = ref({});
 
-  const res = await axios.get(`http://ip-api.com/json/${ip}`);
-  cache[ip] = res.data; // Guarda en cache para futuras consultas
+// ================= COMPUTED =================
+const jails = computed(() => store.jails || []);
+const totalBanned = computed(() => store.totalBanned || 0);
+const newlyBanned = computed(() => store.newlyBanned || {});
 
-  return res.data;
-}
-
-// ==================== CICLO DE VIDA ====================
-// onMounted: se ejecuta cuando el componente se monta en el DOM
+// ================= INIT =================
 onMounted(() => {
-  // Conecta al store de Pinia (WebSocket)
   store.connectSocket();
 
-  // Destruye gráfico anterior si existe
-  if (chart.value) {
-    chart.value.destroy();
-  }
-
-  // Obtiene estado inicial del servicio
   fetchServiceStatus();
-
-  // Actualiza estado del servicio cada 5 segundos
-  setInterval(fetchServiceStatus, 5000);
-
-  // Inicializa gráfico de uptime
-  updateUptimeChart();
-
-  // Inicia el reloj
   updateClock();
-  timer = setInterval(updateClock, 1000);
+
+  setInterval(updateClock, 1000);
+  setInterval(fetchServiceStatus, 5000);
 });
 
-// onUnmounted: se ejecuta cuando el componente se desmonta
 onUnmounted(() => {
-  clearInterval(timer); // Limpia el intervalo del reloj
+  if (chart.value) chart.value.destroy?.();
 });
 
-// watch: observa cambios en serviceStatus para notificar al usuario
-watch(serviceStatus, (newVal) => {
-  if (newVal === "stopped") {
-    new Notification("Fail2Ban parado", {
-      body: "El servicio fail2ban se ha detenido",
-    });
-  }
-});
-
-// ==================== ACTUALIZACIÓN DEL RELOJ ====================
-// updateClock: actualiza la variable clock con la fecha/hora actual
+// ================= CLOCK =================
 const updateClock = () => {
-  const now = new Date();
-  clock.value = now.toLocaleString();
+  clock.value = new Date().toLocaleString();
 };
 
-// ==================== CONSULTA DE ESTADO DEL SERVICIO ====================
-// fetchServiceStatus: obtiene el estado de Fail2Ban desde el backend
+// ================= GEO =================
+async function getCountry(ip) {
+  try {
+    if (!ip) return { country: "Unknown", countryCode: "XX" };
+
+    // cache simple
+    if (geoData.value[ip]) return geoData.value[ip];
+
+    const res = await axios.get(`http://192.168.1.137:3000/api/geo/${ip}`);
+
+    const data = {
+      country: res.data?.country || "Unknown",
+      countryCode: res.data?.countryCode || "XX",
+    };
+
+    geoData.value[ip] = data;
+
+    return data;
+  } catch (err) {
+    console.error("Geo error backend:", ip);
+
+    return {
+      country: "Unknown",
+      countryCode: "XX",
+    };
+  }
+}
+
+watch(
+  () => store.jails,
+  async (val) => {
+    if (!val) return;
+
+    const clean = JSON.parse(JSON.stringify(val));
+
+    const ips = new Set();
+
+    clean.forEach((jail) => {
+      jail.banned?.forEach((ip) => {
+        if (ip) ips.add(ip);
+      });
+    });
+
+    for (const ip of ips) {
+      await getCountry(ip);
+    }
+  },
+  { deep: true }
+);
+
+async function fetchGeoData(jailsData) {
+  const ips = new Set();
+
+  jailsData.forEach((jail) => {
+    jail.banned?.forEach((ip) => {
+      if (typeof ip === "string") ips.add(ip);
+    });
+  });
+
+  for (const ip of ips) {
+    if (!geoData.value[ip]) {
+      await getCountry(ip);
+    }
+  }
+}
+
+// ================= WATCH =================
+watch(
+  () => store.jails,
+  async (val) => {
+    if (!val) return;
+    await fetchGeoData(JSON.parse(JSON.stringify(val)));
+  },
+  { deep: false }
+);
+
+// ================= FLAGS =================
+function getFlagEmoji(code) {
+  if (!code || typeof code !== "string") return "🌍";
+
+  if (code.length !== 2) return "🌍";
+
+  return String.fromCodePoint(
+    ...[...code.toUpperCase()].map((c) => 127397 + c.charCodeAt(0))
+  );
+}
+
+// ================= SERVICE =================
 const fetchServiceStatus = async () => {
   try {
-    // Petición GET al endpoint del backend
     const res = await axios.get("http://192.168.1.137:3000/api/service-status");
 
-    // Normaliza el estado: limpia espacios y convierte a minúsculas
-    const status = (res.data.status || "").toLowerCase().trim();
+    const status = res.data?.status;
 
-    // Actualiza la variable reactiva según el estado recibido
-    if (status === "running" || status === "active") {
-      serviceStatus.value = "running";
-    } else if (status === "stopped" || status === "inactive") {
-      serviceStatus.value = "stopped";
-    } else {
-      serviceStatus.value = "error";
-    }
-  } catch (e) {
-    console.error(e);
+    serviceStatus.value =
+      status === "running" ? "running" : status === "stopped" ? "stopped" : "error";
+  } catch {
     serviceStatus.value = "error";
   }
 };
 
-// ==================== DATOS DE JAILS ====================
-// jails: array reactivo que almacena los jails y sus IPs baneadas
-const jails = ref([]);
-// chart: referencia al gráfico de Chart.js
-const chart = ref(null);
-// newlyBanned: objeto reactivo para rastrear IPs recientemente baneadas (efecto visual)
-const newlyBanned = reactive({});
-// notifiedIPs: Set para rastrear IPs ya notificadas (evita duplicados)
-const notifiedIPs = ref(new Set());
-
-// ==================== CONEXIÓN WEBSOCKET ====================
-// socket: conexión WebSocket al servidor backend
-const socket = io("http://192.168.1.137:3000");
-
-// Solicita permiso para notificaciones del navegador si no está concedido
-if ("Notification" in window && Notification.permission !== "granted") {
-  Notification.requestPermission();
-}
-
-// ==================== FUNCIÓN DE DESBANEO ====================
-// unbanIP: envía solicitud al backend para desbloquear una IP
+// ================= UNBAN =================
 const unbanIP = async (jail, ip) => {
   try {
-    const res = await axios.post("http://192.168.1.137:3000/api/unban", { jail, ip });
-    if (res.data.success) {
-      alert(`IP ${ip} desbloqueada en jail ${jail}`);
-      socket.emit("refresh"); // Solicita actualización inmediata
+    const res = await axios.post("http://192.168.1.137:3000/api/unban", {
+      jail,
+      ip,
+    });
+
+    if (res.data?.success) {
+      store.socket?.emit("refresh");
     }
-  } catch (err) {
-    console.error(err);
-    alert("Error al desbloquear IP");
+  } catch (e) {
+    console.error(e);
   }
 };
-
-// ==================== COMPUTED PROPERTIES ====================
-// totalBanned: calcula el total de IPs baneadas sumando todos los jails
-const totalBanned = computed(() => {
-  return jails.value.reduce((acc, jail) => acc + jail.bannedCount, 0);
-});
-
-// ==================== GRÁFICOS ====================
-// updateChart: crea o actualiza el gráfico de barras con las IPs baneadas por jail
-const updateChart = async (data) => {
-  await nextTick(); // Espera a que el DOM esté actualizado
-
-  const ctx = document.getElementById("chart");
-  if (!ctx) return;
-
-  // Extrae labels y datos para el gráfico
-  const labels = data.map((d) => d.jail);
-  const counts = data.map((d) => d.bannedCount);
-
-  // Verificar si ya existe un gráfico en este canvas y destruirlo
-  const existingChart = Chart.getChart(ctx);
-  if (existingChart) {
-    existingChart.destroy();
-  }
-
-  // Destruye gráfico anterior si existe en nuestra referencia
-  if (chart.value) {
-    chart.value.destroy();
-    chart.value = null;
-  }
-
-  // Crea nuevo gráfico de barras
-  chart.value = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: [...labels],
-      datasets: [
-        {
-          label: "IPs bloqueadas",
-          data: [...counts],
-          backgroundColor: "rgba(220,38,38,0.7)",
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: true, // Desactiva animaciones para mejor rendimiento
-      plugins: {
-        legend: { display: false },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: { precision: 0 },
-        },
-      },
-    },
-  });
-};
-
-// ==================== EVENTOS WEBSOCKET ====================
-// Evento 'status': recibe actualización del estado de todos los jails
-socket.on("status", (data) => {
-  jails.value = data;
-  updateChart(data);
-});
-
-// Evento 'alert': recibe notificación de nuevas IPs bloqueadas
-socket.on("alert", ({ jail, ips }) => {
-  // Filtra solo IPs que no han sido notificadas previamente
-  const newAlertIPs = ips.filter((ip) => {
-    const key = `${jail}:${ip}`;
-    if (notifiedIPs.value.has(key)) return false;
-    notifiedIPs.value.add(key);
-    return true;
-  });
-
-  // Si no hay nuevas IPs, no hace nada
-  if (newAlertIPs.length === 0) return;
-
-  // Actualiza estado para mostrar efecto visual
-  newlyBanned[jail] = ips;
-  alerts.value = newAlertIPs.length;
-  store.alerts = newAlertIPs.length;
-  console.log(`Alerta recibida para jail ${jail}:`, newAlertIPs);
-
-  // Muestra notificación del navegador si hay permiso
-  if ("Notification" in window && Notification.permission === "granted") {
-    newAlertIPs.forEach((ip) => {
-      new Notification(`Fail2Ban Alert`, {
-        body: `Nueva IP bloqueada: ${ip} en jail ${jail}`,
-        icon: "/favicon.ico",
-      });
-    });
-  }
-
-  // Limpia el efecto visual después de 5 segundos
-  setTimeout(() => {
-    newlyBanned[jail] = [];
-  }, 5000);
-});
-
-// ==================== CONTROL DEL SERVICIO ====================
-// startService: inicia el servicio de Fail2Ban
-const startService = async () => {
-  await axios.post("http://192.168.1.137:3000/api/service-start");
-  setTimeout(fetchServiceStatus, 500);
-};
-
-// stopService: detiene el servicio de Fail2Ban
-const stopService = async () => {
-  await axios.post("http://192.168.1.137:3000/api/service-stop");
-  setTimeout(fetchServiceStatus, 500);
-};
-
-// restartService: reinicia el servicio de Fail2Ban
-const restartService = async () => {
-  await axios.post("http://192.168.1.137:3000/api/service-restart");
-  setTimeout(fetchServiceStatus, 500);
-};
-
-// ==================== GRÁFICO DE UPTIME ====================
-// updateUptimeChart: crea o actualiza el gráfico de estado del servicio
-const updateUptimeChart = () => {
-  const ctx = document.getElementById("uptimeChart");
-  if (!ctx) return;
-
-  const labels = uptimeData.value.map((d) => d.time);
-  const values = uptimeData.value.map((d) => d.value);
-
-  if (!uptimeChart.value) {
-    uptimeChart.value = new Chart(ctx, {
-      type: "doughnut",
-      data: {
-        labels,
-        datasets: [
-          {
-            label: "Activo",
-            data: values,
-            tension: 0.3,
-            fill: true,
-          },
-        ],
-      },
-      options: {
-        scales: {
-          y: {
-            ticks: {
-              callback: (v) => (v === 1 ? "Activo" : "Parado"),
-            },
-            min: 0,
-            max: 1,
-          },
-        },
-      },
-    });
-  } else {
-    uptimeChart.value.data.labels = labels;
-    uptimeChart.value.data.datasets[0].data = values;
-    uptimeChart.value.update();
-  }
-};
-
-// ==================== MODO OSCURO ====================
-// Detecta preferencia del sistema y aplica clase 'dark' si corresponde
-if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-  document.documentElement.classList.add("dark");
-}
 </script>
 
 <style>

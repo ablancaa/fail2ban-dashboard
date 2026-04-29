@@ -1,7 +1,6 @@
 <template>
   <nav class="relative bg-slate-900 text-white px-4 py-3 shadow-lg rounded-b-2xl z-50">
     <div class="max-w-6xl mx-auto flex items-center justify-between">
-
       <!-- LEFT -->
       <div class="flex items-center gap-3">
         <img src="../assets/Fail2ban_logo.png" class="w-8 h-8 rounded-lg" />
@@ -30,10 +29,9 @@
 
       <!-- RIGHT -->
       <div class="flex items-center gap-2">
-
         <button
           class="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded-xl transition"
-          @click="store.refresh"
+          @click="handleRefresh"
         >
           🔄
         </button>
@@ -45,7 +43,6 @@
         >
           ☰
         </button>
-
       </div>
     </div>
 
@@ -54,7 +51,6 @@
       v-if="mobileOpen"
       class="md:hidden mt-3 bg-slate-800 rounded-2xl p-3 space-y-2 shadow-2xl border border-slate-700"
     >
-
       <button class="mobile-btn">📊 Dashboard</button>
 
       <button class="mobile-btn flex items-center justify-between">
@@ -71,21 +67,31 @@
 
       <button class="mobile-btn">⚙️ Config</button>
       <button class="mobile-btn">📄 Logs</button>
-
     </div>
   </nav>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useFail2BanStore } from '../stores/fail2ban'
+import { ref, onMounted } from "vue";
+import { useFail2BanStore } from "../stores/fail2ban";
 
-const store = useFail2BanStore()
-const mobileOpen = ref(false)
+const store = useFail2BanStore();
+const mobileOpen = ref(false);
+
+// Debug: verificar que el store tiene los datos correctos
+onMounted(() => {
+  console.log('NavBar mounted, store.alerts:', store.alerts);
+  console.log('NavBar mounted, store.activeJails:', store.activeJails);
+});
 
 const toggleMenu = () => {
-  mobileOpen.value = !mobileOpen.value
-}
+  mobileOpen.value = !mobileOpen.value;
+};
+
+const handleRefresh = () => {
+  store.refresh();
+  window.location.reload();
+};
 </script>
 
 <style scoped>

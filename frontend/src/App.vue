@@ -78,7 +78,15 @@
         <span class="text-lg font-bold">{{ clock }} </span>
       </div>
       <br />
-
+      <!-- ==================== COMPONENTES ADICIONALES ==================== -->
+      <!-- Grid de 2 columnas: Logs y Configuración -->
+      <div class="grid grid-cols-1 gap-2 md:grid-cols-1">
+        <!-- Componente Logs: muestra el historial de logs -->
+        <div class="grid-cols-3 md:grid-cols-4 bg-white rounded-xs shadow p-4">
+          <Logs />
+        </div>
+      </div>
+      <br />
       <!-- ==================== TABLA DE JAILS ==================== -->
       <!-- Tabla que muestra los jails y sus IPs bloqueadas -->
       <div class="bg-white rounded-xl shadow p-4 mb-6 overflow-x-auto">
@@ -157,14 +165,11 @@
         </div>
       </div>
       <br />
-
       <!-- ==================== COMPONENTES ADICIONALES ==================== -->
       <!-- Grid de 2 columnas: Logs y Configuración -->
-      <div class="grid grid-cols-1 gap-2 md:grid-cols-3">
+      <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
         <!-- Componente Logs: muestra el historial de logs -->
-        <div class="bg-white rounded-xs shadow p-4">
-          <Logs />
-        </div>
+
         <div class="bg-white rounded-xs shadow p-4">
           <LogsHistory />
         </div>

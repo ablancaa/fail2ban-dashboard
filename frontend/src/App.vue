@@ -160,10 +160,12 @@
 
       <!-- ==================== COMPONENTES ADICIONALES ==================== -->
       <!-- Grid de 2 columnas: Logs y Configuración -->
-      <div class="grid grid-cols-2 gap-3 md:grid-cols-2">
+      <div class="grid grid-cols-2 gap-0 md:grid-cols-2">
         <!-- Componente Logs: muestra el historial de logs -->
         <div class="bg-white rounded-xl shadow p-4">
           <Logs />
+        </div>
+        <div class="bg-white rounded-xl shadow p-4">
           <LogsHistory />
         </div>
 

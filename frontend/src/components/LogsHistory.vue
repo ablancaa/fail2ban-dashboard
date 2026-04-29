@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from "vue";
 import { useFail2BanStore } from "../stores/fail2ban";
 
 const store = useFail2BanStore();
-const open = ref(true);
+const open = ref(false);
 
 const bans = computed(() => store.bans || []);
 
@@ -45,7 +45,7 @@ const getFlagEmoji = (code) => {
 </script>
 
 <template>
-  <div class="w-full max-w-4xl mx-auto mt-6">
+  <div class="w-full max-w-4xl mx-auto">
     <!-- HEADER -->
     <div
       class="flex items-center justify-between bg-slate-900 text-white px-4 py-3 rounded-xl cursor-pointer"

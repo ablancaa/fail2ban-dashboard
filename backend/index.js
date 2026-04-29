@@ -254,34 +254,44 @@ app.get("/api/fail2ban-bans", async (req, res) => {
 
     const lines = stdout.split("\n").filter(Boolean);
 
-    // Extraer IPs únicas
+    // 🔥 1. Obtener IPs únicas
     const uniqueIPs = new Set();
     lines.forEach((line) => {
       const ipMatch = line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/);
       if (ipMatch) uniqueIPs.add(ipMatch[1]);
     });
 
-    // Obtener geolocalización para cada IP
+    // 🔥 2. Obtener GEO (con cache interno)
     const geoResults = {};
     for (const ip of uniqueIPs) {
       geoResults[ip] = await getGeo(ip);
     }
 
+    // 🔥 3. Construir respuesta final
     const bans = lines
       .map((line) => {
         const ipMatch = line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/);
-        const timeMatch = line.match(/(\w{3}\s+\d+\s+\d+:\d+:\d+)/);
 
-        return ipMatch
-          ? {
-              ip: ipMatch[1],
-              geo: geoResults[ipMatch[1]] || null,
-              timestamp: timeMatch ? timeMatch[1] : null,
-              raw: line,
-            }
-          : null;
+        // ✅ FORMATO REAL FAIL2BAN: 2026-04-08 02:46:31,044
+        const timeMatch = line.match(
+          /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/
+        );
+
+        if (!ipMatch) return null;
+
+        const ip = ipMatch[1];
+        const timestamp = timeMatch ? timeMatch[1] : null;
+
+        return {
+          ip,
+          geo: geoResults[ip] || null,
+          timestamp,
+          raw: line,
+        };
       })
-      .filter(Boolean);
+      .filter(Boolean)
+      // 🔥 4. Ordenar por fecha (más reciente primero)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     res.json({
       total: bans.length,

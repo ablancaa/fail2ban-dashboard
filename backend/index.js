@@ -182,6 +182,49 @@ app.get("/api/jails", async (req, res) => {
   res.json(jails);
 });
 
+// =========================
+// 📦 JAIL CONFIG
+// =========================
+app.get("/api/jail-config", async (req, res) => {
+  const { jail } = req.query;
+
+  // 📁 Config global si no hay jail
+  if (!jail) {
+    exec("cat /etc/fail2ban/jail.local", (err, stdout) => {
+      if (err) {
+        exec("cat /etc/fail2ban/jail.conf", (err2, stdout2) => {
+          if (err2) {
+            return res.status(500).json({ error: "No se encontró configuración" });
+          }
+          res.json({ config: stdout2 });
+        });
+      } else {
+        res.json({ config: stdout });
+      }
+    });
+    return;
+  }
+
+  // 📊 Config de un jail concreto
+  exec(`fail2ban-client get ${jail} ban-time`, (err, stdout) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    const banTime = parseInt(stdout.match(/(\d+)/)?.[1] || 0);
+
+    exec(`fail2ban-client get ${jail} maxretry`, (err2, stdout2) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+
+      const maxRetry = parseInt(stdout2.match(/(\d+)/)?.[1] || 0);
+
+      res.json({
+        jail,
+        banTime,
+        maxRetry,
+      });
+    });
+  });
+});
+
 // Unban IP
 app.post("/api/unban", (req, res) => {
   const { jail, ip } = req.body;

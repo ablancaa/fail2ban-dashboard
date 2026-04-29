@@ -195,7 +195,7 @@ const store = useFail2BanStore();
 // ================= STATE =================
 const serviceStatus = ref("loading");
 const clock = ref("");
-const chart = ref(null);
+let chart = ref(null);
 
 // 🔥 GEO SIMPLE (OBJETO NORMAL, SIN MAP, SIN PROBLEMAS)
 const geoData = ref({});
@@ -212,10 +212,48 @@ onMounted(() => {
   fetchServiceStatus();
   updateClock();
 
+  const ctx = document.getElementById("chart");
+
+  if (!ctx) return;
+
+  chart = new Chart(ctx, {
+    type: "pie", // 🔥 AQUÍ el cambio clave
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: "IPs bloqueadas",
+          data: [],
+          backgroundColor: [
+            "#ef4444",
+            "#3b82f6",
+            "#f59e0b",
+            "#10b981",
+            "#8b5cf6",
+            "#ec4899",
+            "#14b8a6",
+          ],
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+    },
+  });
   setInterval(updateClock, 1000);
   setInterval(fetchServiceStatus, 5000);
 });
 
+watch(
+  () => store.jails,
+  (newData) => {
+    chart.data.labels = newData.map((j) => j.jail);
+    chart.data.datasets[0].data = newData.map((j) => j.bannedCount);
+    chart.update();
+  },
+  { deep: true }
+);
 onUnmounted(() => {
   if (chart.value) chart.value.destroy?.();
 });

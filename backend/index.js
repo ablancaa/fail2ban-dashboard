@@ -51,6 +51,12 @@ async function getGeo(ip) {
     return data;
 
   } catch (err) {
+
+    // 🔥 DETECTAR RATE LIMIT
+    if (err.response?.status === 429) {
+      console.warn("⚠️ Rate limit alcanzado, usando fallback");
+    }
+
     const fallback = {
       ip,
       country: "Unknown",
@@ -58,7 +64,7 @@ async function getGeo(ip) {
       city: "",
     };
 
-    geoCache.set(ip, fallback);
+    geoCache.set(ip, fallback); // 👈 IMPORTANTE: cache también errores
     return fallback;
   }
 }

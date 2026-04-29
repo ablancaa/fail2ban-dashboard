@@ -9,7 +9,7 @@
 
       <!-- Título principal con logo -->
       <h1 class="text-2xl md:text-3xl font-bold mb-4 flex items-center gap-2">
-        <img src="../src/assets/Fail2ban_logo.png" class="w-20 h-20" />
+        <img src="../src/assets/Fail2ban_logo.png" class="w-25 h-20" />
         Fail2Ban Dashboard
       </h1>
 

@@ -261,49 +261,45 @@ app.get("/api/fail2ban-bans", async (req, res) => {
     const lines = stdout.split("\n").filter(Boolean);
 
     const uniqueIPs = new Set();
+    const parsedLines = [];
 
-    const parsedLines = lines.map((line) => {
+    for (const line of lines) {
       const ipMatch = line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/);
 
-      // 🔥 timestamp REAL fail2ban (MUY IMPORTANTE)
-      const timeMatch = line.match(
-        /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/
-      );
-
-      if (!ipMatch) return null;
+      if (!ipMatch) continue;
 
       const ip = ipMatch[1];
       uniqueIPs.add(ip);
 
-      return {
+      // 🔥 MEJOR PARSER DE FECHA FAIL2BAN
+      const timeMatch =
+        line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/) ||
+        line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+
+      parsedLines.push({
         ip,
         timestamp: timeMatch ? timeMatch[1] : new Date().toISOString(),
         raw: line,
-      };
-    }).filter(Boolean);
-
-    // 🌍 GEO con cache + fallback seguro
-    const geoResults = {};
-
-    for (const ip of uniqueIPs) {
-      try {
-        geoResults[ip] = await getGeo(ip);
-      } catch (e) {
-        geoResults[ip] = {
-          ip,
-          country: "Unknown",
-          countryCode: "XX",
-        };
-      }
+      });
     }
 
-    const bans = parsedLines.map((b) => ({
-      ...b,
-      geo: geoResults[b.ip] || {
-        country: "Unknown",
-        countryCode: "XX",
-      },
-    }));
+    // 🔥 GEO CON CACHE
+    const geoResults = {};
+    for (const ip of uniqueIPs) {
+      geoResults[ip] = await getGeo(ip);
+    }
+
+    const bans = parsedLines
+      .map((b) => ({
+        ip: b.ip,
+        geo: geoResults[b.ip] || {
+          country: "Unknown",
+          countryCode: "XX",
+        },
+        timestamp: b.timestamp,
+        raw: b.raw,
+      }))
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     res.json({
       total: bans.length,

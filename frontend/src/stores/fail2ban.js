@@ -62,7 +62,7 @@ export const useFail2BanStore = defineStore('fail2ban', () => {
 
   alerts.value = data.ips?.length || 0
 
-  if (data.jail && data.ips) {
+  if (data.jail && Array.isArray(data.ips)) {
 
     const cleanIPs = data.ips.map(item => {
       if (typeof item === "string") return item
@@ -71,6 +71,18 @@ export const useFail2BanStore = defineStore('fail2ban', () => {
     }).filter(Boolean)
 
     newlyBanned.value[data.jail] = cleanIPs
+
+    // 🔥 AQUÍ ESTÁ LA CLAVE: APLANAR
+    data.ips.forEach(ipData => {
+      logs.value.unshift({
+        ip: ipData.ip,
+        geo: ipData.geo || null,
+        jail: data.jail,
+        timestamp: new Date().toISOString(),
+        country: ipData.geo?.country || "Unknown",
+        countryCode: ipData.geo?.countryCode || "XX"
+      })
+    })
   }
 })
   }

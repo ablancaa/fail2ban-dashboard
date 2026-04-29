@@ -82,7 +82,7 @@
       <!-- Grid de 2 columnas: Logs y Configuración -->
       <div class="grid grid-cols-1 gap-2 md:grid-cols-1">
         <!-- Componente Logs: muestra el historial de logs -->
-        <div class="grid-cols-3 md:grid-cols-4 bg-white rounded-xs shadow p-4">
+        <div class="grid-cols-1 md:grid-cols-1 rounded-xs shadow p-0">
           <Logs />
         </div>
       </div>
@@ -99,7 +99,7 @@
               <thead>
                 <tr class="border-b">
                   <th class="text-left p-1">Jail</th>
-                  <th class="text-left p-1">IPs bloqueadas</th>
+                  <!-- <th class="text-left p-1">IPs bloqueadas</th> -->
                   <th class="text-left p-1">Lista IPs</th>
                 </tr>
               </thead>
@@ -109,7 +109,7 @@
                   <!-- Nombre del jail -->
                   <td class="p-2 font-medium">{{ jail.jail }}</td>
                   <!-- Cantidad de IPs baneadas -->
-                  <td class="p-2">{{ jail.bannedCount }}</td>
+                  <!-- <td class="p-2">{{ jail.bannedCount }}</td> -->
                   <!-- Lista de IPs con botón para desbloquear -->
                   <td class="p-2">
                     <div class="flex flex-wrap gap-1">

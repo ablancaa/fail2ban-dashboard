@@ -47,7 +47,7 @@ const getFlagEmoji = (code) => {
 </script>
 
 <template>
-  <div class="w-full max-w-3xl mx-auto">
+  <div class="w-full max-w-6xl mx-auto">
     <div
       class="flex items-center justify-between bg-slate-900 text-white px-4 py-3 rounded-xl shadow-md cursor-pointer"
       @click="toggle"
@@ -64,7 +64,7 @@ const getFlagEmoji = (code) => {
 
     <div
       v-if="open"
-      class="bg-white dark:bg-slate-900 border rounded-xl mt-2 shadow-sm overflow-hidden"
+      class="bg-white white:bg-slate-900 border rounded-xl mt-2 shadow-sm overflow-hidden"
     >
       <div v-if="logs.length > 0">
         <div
@@ -82,10 +82,11 @@ const getFlagEmoji = (code) => {
                 <!-- {{ getFlagEmoji(b.geo?.countryCode) }} -->
               </span>
 
-              <span>{{ b.ip }}</span>
+              <span class="text-slate-900">{{ b.ip }}</span>
 
-              <span class="text-xs text-slate-500">
-                {{ b.geo?.country || "Unknown" }}
+              <span class="text-xs text-slate-600">
+                - {{ b.geo?.country || "Unknown" }}
+                <!-- {{ b.geo?.country || "Unknown" }} -->
               </span>
             </div>
 

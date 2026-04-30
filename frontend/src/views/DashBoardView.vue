@@ -106,7 +106,7 @@
               <tr v-for="jail in store.jails" :key="jail.jail" class="border-b">
                 <!-- Nombre del jail -->
                 <td class="p-2 font-medium">{{ jail.jail }}</td>
-                <!-- Cantidad de IPs baneadas -->
+                <!-- Cantidad de IPs baneadas -- />
                 <!-- <td class="p-2">{{ jail.bannedCount }}</td> -->
                 <!-- Lista de IPs con botón para desbloquear -->
                 <td class="p-2">

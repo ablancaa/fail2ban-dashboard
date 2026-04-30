@@ -136,9 +136,9 @@ const getDetails = (jailName) => jailDetails.value[jailName] || null;
                   }}</span>
                 </div>
                 <div v-if="getDetails(jail.jail).filter.journalMatches" class="mt-2">
-                  <span class="text-gray-600 text-xs">Journal matches:</span>
+                  <!-- <span class="text-gray-600 text-xs">Journal matches:</span> -->
                   <p class="text-xs font-mono text-gray-500 break-all">
-                    {{ getDetails(jail.jail).filter.journalMatches }}
+                    <!-- {{ getDetails(jail.jail).filter.journalMatches }} no hace nada-->
                   </p>
                 </div>
               </div>

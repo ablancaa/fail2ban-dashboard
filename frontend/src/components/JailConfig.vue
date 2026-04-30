@@ -5,7 +5,7 @@
       @click="toggle"
       class="flex items-center justify-between bg-slate-900 text-white px-4 py-3 rounded-xl shadow-md cursor-pointer w-full"
     >
-      <h2 class="text-lg font-semibold">Configuración jail.local</h2>
+      <h2 class="font-semibold">Configuración jail.local</h2>
 
       <span
         class="transform transition-transform duration-300 text-gray-500"

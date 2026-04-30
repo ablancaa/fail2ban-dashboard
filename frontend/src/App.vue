@@ -2,15 +2,32 @@
 import NavBar from "./components/NavBar.vue";
 import Footer from "./components/Footer.vue";
 import { useFail2BanStore } from "@/stores/fail2ban";
+import { ref } from "vue";
 
+import fondo from "@/assets/fondo.jpg";
+
+const bgImage = ref(fondo);
 const store = useFail2BanStore();
-store.jails.length;
 </script>
+
 <template>
-  <!-- Contenedor principal con fondo gris y padding -->
-  <NavBar :jails="store.jails" />
-  <div class="min-h-screen bg-gray-100 p-4">
-    <router-view />
-    <Footer />
+  <div
+    class="min-h-screen bg-cover bg-center relative"
+    :style="{ backgroundImage: `url(${bgImage})` }"
+  >
+    <!-- overlay -->
+    <div class="absolute inset-0 bg-black/5"></div>
+
+    <!-- CONTENIDO (ENCIMA DEL FONDO) -->
+    <div class="relative z-10 min-h-screen flex flex-col">
+      <NavBar :jails="store.jails" />
+
+      <!-- ❌ QUITAR bg-gray-100 -->
+      <div class="flex-1 p-4">
+        <router-view />
+      </div>
+
+      <Footer />
+    </div>
   </div>
 </template>

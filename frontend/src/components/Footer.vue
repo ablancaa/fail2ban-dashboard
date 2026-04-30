@@ -30,7 +30,7 @@ const formatTime = (date) => {
 </script>
 
 <template>
-  <footer class="bg-gray-800 text-white mt-4 rounded-2xl shadow-lg">
+  <footer class="bg-gray-800 text-white mt-4 rounded-2xl shadow-lg mb-2">
     <div
       class="max-w-6xl mx-auto px-4 py-2 flex flex-col md:flex-row items-center justify-between gap-2"
     >

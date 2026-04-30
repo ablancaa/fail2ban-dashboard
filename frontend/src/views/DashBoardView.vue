@@ -167,21 +167,20 @@
       </div>
     </div>
 
-    <br />
     <!-- ==================== COMPONENTES ADICIONALES ==================== -->
     <!-- Grid de 2 columnas: Logs y Configuración -->
-    <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
-      <!-- Componente Logs: muestra el historial de logs -->
+    <!-- <div class="grid grid-cols-1 gap-2 md:grid-cols-2"> -->
+    <!-- Componente Logs: muestra el historial de logs -->
 
-      <div class="bg-white rounded-xs shadow p-4">
-        <!-- <LogsHistory /> -->
-      </div>
+    <!-- <div class="bg-white rounded-xs shadow p-4"> -->
+    <!-- <LogsHistory /> -->
+    <!-- </div> -->
 
-      <!-- Componente JailConfig: muestra la configuración de los jails -->
-      <div class="bg-white rounded-xs shadow p-4">
-        <!-- <JailConfig /> -->
-      </div>
-    </div>
+    <!-- Componente JailConfig: muestra la configuración de los jails -->
+    <!-- <div class="bg-white rounded-xs shadow p-4"> -->
+    <!-- <JailConfig /> -->
+    <!-- </div> -->
+    <!-- </div> -->
   </div>
 </template>
 

@@ -290,7 +290,7 @@ app.get("/api/jail-status/:name", async (req, res) => {
 app.get("/api/jail-banlist/:name", async (req, res) => {
   const jailName = req.params.name;
   
-  exec(`fail2ban-client get ${jailName} banlist`, (err, stdout) => {
+  exec(`fail2ban-client get ${jailName} banlist`, async (err, stdout) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -300,10 +300,18 @@ app.get("/api/jail-banlist/:name", async (req, res) => {
       .filter(Boolean)
       .filter(line => line.match(/^\d+\.\d+\.\d+\.\d+$/));
 
+    // Obtener información geográfica de cada IP
+    const ipsWithGeo = await Promise.all(
+      ips.map(async (ip) => {
+        const geo = await getGeo(ip);
+        return { ip, geo };
+      })
+    );
+
     res.json({
       jail: jailName,
       total: ips.length,
-      ips
+      ips: ipsWithGeo
     });
   });
 });

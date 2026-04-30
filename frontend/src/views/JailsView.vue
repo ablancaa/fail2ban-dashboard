@@ -92,8 +92,19 @@ const getDetails = (jailName) => jailDetails.value[jailName] || null;
         <!-- Resumen siempre visible -->
         <div class="p-4">
           <div class="flex items-center justify-between text-sm">
-            <span class="text-gray-600">IPs bloqueadas:</span>
-            <span class="font-bold text-red-600">{{ jail.bannedCount || 0 }}</span>
+            <div class="flex items-center gap-2">
+              <!-- Círculo parpadeante: rojo si hay IPs, verde si no hay -->
+              <span
+                class="w-3 h-3 rounded-full"
+                :class="
+                  jail.bannedCount > 0
+                    ? 'bg-red-500 animate-pulse'
+                    : 'bg-green-500 animate-pulse'
+                "
+              ></span>
+              <span class="text-gray-600">IPs bloqueadas:</span>
+            </div>
+            <span class="font-bold text-gray-600">{{ jail.bannedCount || 0 }}</span>
           </div>
         </div>
 
@@ -175,11 +186,22 @@ const getDetails = (jailName) => jailDetails.value[jailName] || null;
               </h4>
               <ul class="space-y-1 max-h-40 overflow-y-auto">
                 <li
-                  v-for="ip in getDetails(jail.jail).banlist"
-                  :key="ip"
-                  class="font-mono text-xs bg-white px-2 py-1 rounded"
+                  v-for="item in getDetails(jail.jail).banlist"
+                  :key="item.ip"
+                  class="flex items-center gap-2 bg-white px-2 py-1 rounded"
                 >
-                  {{ ip }}
+                  <img
+                    :src="`https://flagcdn.com/24x18/${
+                      item.geo?.countryCode?.toLowerCase() || 'xx'
+                    }.png`"
+                    class="w-6 h-4 rounded"
+                    :alt="item.geo?.country"
+                  />
+                  <span class="font-mono text-xs">{{ item.ip }}</span>
+                  <span class="text-xs text-gray-500">
+                    {{ item.geo?.country || "Unknown"
+                    }}{{ item.geo?.city ? `, ${item.geo.city}` : "" }}
+                  </span>
                 </li>
               </ul>
             </div>

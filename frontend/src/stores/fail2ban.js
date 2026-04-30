@@ -120,6 +120,7 @@ export const useFail2BanStore = defineStore('fail2ban', () => {
 
     bans.value = res.data.bans.map(b => ({
       ip: b.ip,
+      jail: b.jail,
       timestamp: b.timestamp,
       raw: b.raw,
 
@@ -133,6 +134,26 @@ export const useFail2BanStore = defineStore('fail2ban', () => {
     console.error("fetchBans error:", err)
   }
 }
+
+  // -----------------------------
+  // UNBAN IP
+  // -----------------------------
+  const unbanIP = async (jail, ip) => {
+    try {
+      await axios.post('http://192.168.1.137:3000/api/unban', { jail, ip })
+      
+      // Eliminar la IP del array de logs local inmediatamente
+      const originalLength = logs.value.length
+      logs.value = logs.value.filter(log => log.ip !== ip)
+      console.log(`Unban: IP ${ip} eliminada (${originalLength} -> ${logs.value.length})`)
+      
+      // Refrescar después de unban
+      socket.emit('refresh')
+    } catch (err) {
+      console.error("unban error:", err)
+      throw err
+    }
+  }
 
   // -----------------------------
   // EXPOSICIÓN DEL STORE
@@ -152,6 +173,8 @@ export const useFail2BanStore = defineStore('fail2ban', () => {
     refresh,
 
     bans,
-    fetchBans
+    fetchBans,
+
+    unbanIP
   }
 })

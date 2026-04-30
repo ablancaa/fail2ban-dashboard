@@ -1,15 +1,33 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useFail2BanStore } from "../stores/fail2ban";
 
 const store = useFail2BanStore();
 const open = ref(false);
 
-const bans = computed(() => store.bans || []);
+// Usar ref en lugar de computed para mayor control
+let bans = ref([]);
 
 onMounted(() => {
   store.fetchBans();
 });
+
+// Sincronizar con el store
+const syncBans = () => {
+  bans.value = [...store.bans];
+};
+
+// Watch para detectar cambios en los bans del store
+watch(
+  () => store.bans,
+  (newBans) => {
+    bans.value = [...newBans];
+  },
+  { deep: true }
+);
+
+// Sincronización inicial
+syncBans();
 
 const toggle = () => {
   open.value = !open.value;
@@ -45,7 +63,7 @@ const getFlagEmoji = (code) => {
 </script>
 
 <template>
-  <div class="w-full max-w-4xl mx-auto">
+  <div class="w-full max-w-6xl mx-auto">
     <!-- HEADER -->
     <div
       class="flex items-center justify-between bg-slate-900 text-white px-4 py-3 rounded-xl cursor-pointer"
@@ -88,13 +106,21 @@ const getFlagEmoji = (code) => {
               <!-- país -->
               <span class="text-xs text-gray-500">
                 {{ b.geo?.country || "Unknown" }}
+                ({{ b.geo?.city || "Unknown" }})
               </span>
             </div>
 
-            <!-- fecha -->
-            <span class="text-xs text-gray-500">
-              🕒 {{ formatTimestamp(b.timestamp) }}
-            </span>
+            <!-- fecha + jail -->
+            <div class="flex items-center gap-2">
+              <span
+                class="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded font-medium"
+              >
+                {{ b.jail || "N/A" }}
+              </span>
+              <span class="text-xs text-gray-500">
+                🕒 {{ formatTimestamp(b.timestamp) }}
+              </span>
+            </div>
           </div>
 
           <!-- etiqueta -->

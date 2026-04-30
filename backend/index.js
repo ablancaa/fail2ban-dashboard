@@ -281,13 +281,19 @@ app.get("/api/fail2ban-bans", async (req, res) => {
       .map(line => {
         const ipMatch = line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/);
         const timeMatch = line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+        
+        // Formato fail2ban: [jail] Ban IP o jail: nombre
+        const jailMatch = line.match(/\[([a-zA-Z0-9_-]+)\].*Ban/i) || 
+                         line.match(/jail:\s*([a-zA-Z0-9_-]+)/i);
 
         if (!ipMatch) return null;
 
         const ip = ipMatch[1];
+        const jail = jailMatch ? jailMatch[1] : null;
 
         return {
           ip,
+          jail: jail,
           geo: geoMap[ip] || null,
           timestamp: timeMatch ? timeMatch[1] : null,
           raw: line

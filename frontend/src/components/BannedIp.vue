@@ -1,15 +1,35 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useFail2BanStore } from "../stores/fail2ban";
 
 const store = useFail2BanStore();
 const open = ref(false);
 
-const bans = computed(() => store.bans || []);
-const logs = computed(() => store.logs || []);
+// Usar store directamente en lugar de computed
+let logs = ref([]);
+let jails = ref([]);
+
 onMounted(() => {
   store.fetchBans();
 });
+
+// Sincronizar con el store
+const syncLogs = () => {
+  logs.value = store.logs;
+  jails.value = store.jails;
+};
+
+// Watch para detectar cambios en los logs y actualizar automáticamente
+watch(
+  () => store.logs,
+  (newLogs) => {
+    logs.value = [...newLogs]; // Forzar nueva referencia
+  },
+  { deep: true }
+);
+
+// Sincronización inicial
+syncLogs();
 
 const toggle = () => {
   open.value = !open.value;
@@ -44,6 +64,30 @@ const getFlagEmoji = (code) => {
     .map((c) => 127397 + c.charCodeAt(0))
     .reduce((a, b) => String.fromCodePoint(a, b));
 };
+
+// Unban IP
+const unbanLoading = ref({});
+
+const handleUnban = async (log) => {
+  if (!log.jail) {
+    alert("No hay información del jail");
+    return;
+  }
+
+  unbanLoading.value[log.ip] = true;
+  try {
+    await store.unbanIP(log.jail, log.ip);
+    alert(`IP ${log.ip} liberada del jail ${log.jail}`);
+    // Sincronizar después del unban
+    syncLogs();
+    await store.refresh();
+    await store.fetchBans();
+  } catch (err) {
+    alert("Error al hacer unban");
+  } finally {
+    unbanLoading.value[log.ip] = false;
+  }
+};
 </script>
 
 <template>
@@ -72,7 +116,7 @@ const getFlagEmoji = (code) => {
           :key="b.ip + b.timestamp"
           class="flex items-center justify-between px-4 py-3 border-b"
         >
-          <div class="flex flex-col gap-1">
+          <div class="flex flex-col gap-1 grid grid-flow-col-2 grid-rows-1 gap-1">
             <!-- IP + bandera + país -->
             <div class="flex items-center gap-2 font-mono text-sm">
               <span class="text-lg"
@@ -82,21 +126,36 @@ const getFlagEmoji = (code) => {
                 <!-- {{ getFlagEmoji(b.geo?.countryCode) }} -->
               </span>
 
-              <span class="text-slate-900">{{ b.ip }}</span>
-
-              <span class="text-xs text-slate-600">
-                - {{ b.geo?.country || "Unknown" }}
-                <!-- {{ b.geo?.country || "Unknown" }} -->
+              <span class="text-slate-900"
+                >{{ b.ip }}<br />
+                <span class="text-xs text-slate-600">
+                  {{ b.geo?.country || "Unknown" }} ({{ b.geo?.city || "Unknown" }})
+                  <!-- {{ b.geo?.country || "Unknown" }} -->
+                </span>
               </span>
             </div>
 
-            <!-- FECHA -->
-            <span class="text-xs text-slate-500">
-              🕒 {{ formatTimestamp(b.timestamp) }}
-            </span>
+            <!-- FECHA + JAIL -->
+            <div class="flex items-center gap-2">
+              <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                {{ b.jail }}
+              </span>
+              <span class="text-xs text-slate-500">
+                🕒 {{ formatTimestamp(b.timestamp) }}
+              </span>
+            </div>
           </div>
 
-          <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded"> ATTACK </span>
+          <div class="flex items-center gap-2">
+            <!-- Botón Unban -->
+            <button
+              @click="handleUnban(b)"
+              :disabled="unbanLoading[b.ip] || !b.jail"
+              class="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {{ unbanLoading[b.ip] ? "..." : "Unban" }}
+            </button>
+          </div>
         </div>
       </div>
 

@@ -26,7 +26,8 @@ const store = useFail2BanStore();
       <div class="flex-1 p-4">
         <router-view />
       </div>
-
+    </div>
+    <div class="flex-1 p-4">
       <Footer />
     </div>
   </div>

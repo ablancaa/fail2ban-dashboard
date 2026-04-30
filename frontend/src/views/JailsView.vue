@@ -59,8 +59,12 @@ const getDetails = (jailName) => jailDetails.value[jailName] || null;
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto p-4">
-    <h1 class="text-2xl font-bold mb-4">🔒 Jails</h1>
+  <div class="max-w-6xl mx-auto">
+    <h1
+      class="text-2xl font-bold mb-4 bg-slate-900 text-white px-4 py-2 rounded-xl shadow"
+    >
+      🔒 Jails
+    </h1>
 
     <div v-if="jails.length === 0" class="text-gray-500">No hay jails disponibles</div>
 

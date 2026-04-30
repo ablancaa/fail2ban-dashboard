@@ -32,7 +32,7 @@ const formatTime = (date) => {
 <template>
   <footer class="bg-gray-800 text-white mt-4 rounded-2xl shadow-lg">
     <div
-      class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-2"
+      class="max-w-6xl mx-auto px-4 py-2 flex flex-col md:flex-row items-center justify-between gap-2"
     >
       <!-- Nombre -->
       <div class="text-sm md:text-base font-medium">

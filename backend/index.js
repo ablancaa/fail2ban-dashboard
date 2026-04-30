@@ -289,18 +289,21 @@ app.get("/api/jail-status/:name", async (req, res) => {
 // Obtener historial completo de IPs baneadas en un jail
 app.get("/api/jail-banlist/:name", async (req, res) => {
   const jailName = req.params.name;
-  
+
   exec(`fail2ban-client get ${jailName} banlist`, async (err, stdout) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
+    if (err || !stdout) {
+      return res.json({
+        jail: jailName,
+        total: 0,
+        ips: []
+      });
     }
 
-    const ips = stdout.split("\n")
-      .map(line => line.trim())
-      .filter(Boolean)
-      .filter(line => line.match(/^\d+\.\d+\.\d+\.\d+$/));
+    const ips = stdout
+      .split(/[\s\n]+/)
+      .map(ip => ip.trim())
+      .filter(ip => /^\d+\.\d+\.\d+\.\d+$/.test(ip));
 
-    // Obtener información geográfica de cada IP
     const ipsWithGeo = await Promise.all(
       ips.map(async (ip) => {
         const geo = await getGeo(ip);

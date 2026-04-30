@@ -222,5 +222,6 @@ MIT
 ---
 
 ## 👨‍💻 Autor
-
+Alberto Blanca Alcaide
+<img width="512" height="512" alt="image" src="https://github.com/user-attachments/assets/d9c01623-f938-4f14-9133-e47046f9f45e" /> Graduado en Multimedia
 Fail2Ban Dashboard — proyecto personal para monitorización de seguridad SSH.

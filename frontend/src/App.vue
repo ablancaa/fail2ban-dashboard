@@ -4,7 +4,7 @@ import Footer from "./components/Footer.vue";
 import { useFail2BanStore } from "@/stores/fail2ban";
 import { ref } from "vue";
 
-import fondo from "../src/assets/fondo.jpg";
+import fondo from "/src/assets/fondo.jpg";
 
 const bgImage = ref(fondo);
 const store = useFail2BanStore();

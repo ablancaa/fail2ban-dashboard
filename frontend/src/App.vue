@@ -16,7 +16,7 @@ const store = useFail2BanStore();
     :style="{ backgroundImage: `url(${bgImage})` }"
   >
     <!-- overlay -->
-    <div class="absolute inset-0 bg-black/5"></div>
+    <div class="absolute inset-0 bg-blue-900/10"></div>
 
     <!-- CONTENIDO (ENCIMA DEL FONDO) -->
     <div class="relative z-10 min-h-screen flex flex-col">

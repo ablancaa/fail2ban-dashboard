@@ -239,6 +239,53 @@ app.post("/api/unban", (req, res) => {
   });
 });
 
+// Obtener información completa de un jail
+app.get("/api/jail-status/:name", async (req, res) => {
+  const jailName = req.params.name;
+  
+  exec(`fail2ban-client status ${jailName}`, (err, stdout) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    // Parsear la salida
+    const result = {
+      jail: jailName,
+      filter: {},
+      actions: {}
+    };
+
+    // Currently failed
+    const currentlyFailedMatch = stdout.match(/Currently failed:\s*(\d+)/);
+    if (currentlyFailedMatch) result.filter.currentlyFailed = parseInt(currentlyFailedMatch[1]);
+
+    // Total failed
+    const totalFailedMatch = stdout.match(/Total failed:\s*(\d+)/);
+    if (totalFailedMatch) result.filter.totalFailed = parseInt(totalFailedMatch[1]);
+
+    // Journal matches
+    const journalMatch = stdout.match(/Journal matches:\s*(.*)/);
+    if (journalMatch) result.filter.journalMatches = journalMatch[1].trim();
+
+    // Currently banned
+    const currentlyBannedMatch = stdout.match(/Currently banned:\s*(\d+)/);
+    if (currentlyBannedMatch) result.actions.currentlyBanned = parseInt(currentlyBannedMatch[1]);
+
+    // Total banned
+    const totalBannedMatch = stdout.match(/Total banned:\s*(\d+)/);
+    if (totalBannedMatch) result.actions.totalBanned = parseInt(totalBannedMatch[1]);
+
+    // Banned IP list
+    const bannedMatch = stdout.match(/Banned IP list:\s*(.*)/);
+    if (bannedMatch) {
+      const ips = bannedMatch[1].split(/\s+/).filter(Boolean);
+      result.actions.bannedIPs = ips;
+    }
+
+    res.json(result);
+  });
+});
+
 // Service status
 app.get("/api/service-status", (req, res) => {
   exec("systemctl is-active fail2ban", (err, stdout) => {
@@ -282,14 +329,26 @@ app.get("/api/fail2ban-bans", async (req, res) => {
         const ipMatch = line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/);
         const timeMatch = line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
         
-        // Formato fail2ban: [jail] Ban IP o jail: nombre
-        const jailMatch = line.match(/\[([a-zA-Z0-9_-]+)\].*Ban/i) || 
-                         line.match(/jail:\s*([a-zA-Z0-9_-]+)/i);
+        // Buscar jail en diferentes formatos:
+        // [sshd] Ban 1.2.3.4
+        // 2026-01-01 12:00:00,000 fail2ban[123]: INFO [sshd] Ban 1.2.3.4
+        // fail2ban.actions[123]: WARNING [nginx-http-auth] Ban 1.2.3.4
+        let jail = null;
+        
+        // Intento 1: [jail] antes de Ban
+        const match1 = line.match(/\[([^\]]+)\]\s+Ban/i);
+        // Intento 2: fail2ban[jail]: o similar
+        const match2 = line.match(/fail2ban[.\w]*\[[^\]]*\]\s*:\s*\w+\s*\[([^\]]+)\]/i);
+        // Intento 3: después de la fecha y fail2ban
+        const match3 = line.match(/fail2ban[^\[]*\[([^\]]+)\]/i);
+        
+        if (match1) jail = match1[1];
+        else if (match2) jail = match2[1];
+        else if (match3) jail = match3[1];
 
         if (!ipMatch) return null;
 
         const ip = ipMatch[1];
-        const jail = jailMatch ? jailMatch[1] : null;
 
         return {
           ip,

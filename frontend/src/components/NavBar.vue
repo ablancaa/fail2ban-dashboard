@@ -11,27 +11,33 @@
 
       <!-- DESKTOP MENU -->
       <div class="hidden md:flex items-center gap-2">
-        <button class="nav-btn">📊 <router-link to="/">Dashboard</router-link></button>
+        <router-link to="/"><button class="nav-btn">📊 Dashboard</button></router-link>
 
-        <button class="nav-btn">
-          🔒 <Router-link to="/JailsView">Jails</Router-link>
-          <span class="badge">{{ store.activeJails }}</span>
-        </button>
+        <Router-link to="/JailsView">
+          <button class="nav-btn">
+            🔒 Jails
+            <span class="badge">{{ store.activeJails }}</span>
+          </button></Router-link
+        >
 
-        <button class="nav-btn">
-          🚨 <router-link to="/BannedIpView">Alertas</router-link>
-          <span v-if="store.alerts > 0" class="badge-red">
-            {{ store.alerts }}
-          </span>
-        </button>
+        <router-link to="/BannedIpView"
+          ><button class="nav-btn">
+            🚨 Alertas
+            <span v-if="store.alerts > 0" class="badge-red">
+              {{ store.alerts }}
+            </span>
+          </button></router-link
+        >
 
-        <button class="nav-btn">
-          ⚙️ <router-link to="/JailConfigView">Config</router-link>
-        </button>
-        <button class="nav-btn">
-          📄 <router-link to="/LogHistoryView">Logs History</router-link>
-          <span class="badge">{{ store.bans.length }}</span>
-        </button>
+        <router-link to="/JailConfigView">
+          <button class="nav-btn">⚙️ Config</button>
+        </router-link>
+        <router-link to="/LogHistoryView"
+          ><button class="nav-btn">
+            📄 Logs History
+            <span class="badge">{{ store.bans.length }}</span>
+          </button></router-link
+        >
       </div>
 
       <!-- RIGHT -->
@@ -58,27 +64,34 @@
       v-if="mobileOpen"
       class="md:hidden mt-3 bg-slate-800 rounded-2xl p-3 space-y-2 shadow-2xl border border-slate-700"
     >
-      <button class="mobile-btn">📊 <router-link to="/">Dashboard</router-link></button>
+      <router-link to="/"><button class="mobile-btn">📊 Dashboard</button></router-link>
 
-      <button class="mobile-btn flex items-center justify-between">
-        <span>🔒 <router-link to="/JailsView">Jails</router-link></span>
-        <span class="badge">{{ store.activeJails }}</span>
-      </button>
+      <router-link to="/JailsView"
+        ><button class="mobile-btn flex items-center justify-between">
+          <span>🔒 Jails</span>
+          <span class="badge">{{ store.activeJails }}</span>
+        </button></router-link
+      >
 
-      <button class="mobile-btn flex items-center justify-between">
-        <span>🚨 <router-link to="/BannedIpView">Alertas</router-link></span>
-        <span v-if="store.alerts > 0" class="badge-red">
-          {{ store.alerts }}
-        </span>
-      </button>
+      <router-link to="/BannedIpView">
+        <button class="mobile-btn flex items-center justify-between">
+          <span>🚨 Alertas</span>
+          <span v-if="store.alerts > 0" class="badge-red">
+            {{ store.alerts }}
+          </span>
+        </button></router-link
+      >
 
-      <button class="mobile-btn">
-        ⚙️ <router-link to="/JailConfigView">Config</router-link>
-      </button>
-      <button class="mobile-btn flex items-center justify-between">
-        <span>📄 <router-link to="/LogHistoryView">Logs History</router-link></span>
-        <span class="badge">{{ store.bans.length }}</span>
-      </button>
+      <router-link to="/JailConfigView">
+        <button class="mobile-btn">⚙️ Config</button>
+      </router-link>
+
+      <router-link to="/LogHistoryView">
+        <button class="mobile-btn flex items-center justify-between">
+          <span>📄 Logs History</span>
+          <span class="badge">{{ store.bans.length }}</span>
+        </button>
+      </router-link>
     </div>
   </nav>
 </template>
@@ -86,9 +99,6 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useFail2BanStore } from "../stores/fail2ban";
-import router from "@/router";
-import { routerKey, routerViewLocationKey } from "vue-router";
-import { Router } from "lucide-vue-next";
 
 const store = useFail2BanStore();
 const mobileOpen = ref(false);

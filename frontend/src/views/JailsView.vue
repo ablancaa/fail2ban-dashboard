@@ -34,10 +34,17 @@ const toggleJail = async (jailName) => {
   if (open.value[jailName] && !jailDetails.value[jailName] && !loading.value[jailName]) {
     loading.value[jailName] = true;
     try {
-      const res = await axios.get(
+      // Cargar estado actual
+      const statusRes = await axios.get(
         `http://192.168.1.137:3000/api/jail-status/${jailName}`
       );
-      jailDetails.value[jailName] = res.data;
+      jailDetails.value[jailName] = statusRes.data;
+
+      // Cargar lista completa de baneos históricos
+      const banlistRes = await axios.get(
+        `http://192.168.1.137:3000/api/jail-banlist/${jailName}`
+      );
+      jailDetails.value[jailName].banlist = banlistRes.data.ips;
     } catch (err) {
       console.error("Error loading jail details:", err);
     } finally {
@@ -152,6 +159,25 @@ const getDetails = (jailName) => jailDetails.value[jailName] || null;
                   v-for="ip in getDetails(jail.jail).actions.bannedIPs"
                   :key="ip"
                   class="font-mono text-sm bg-white px-2 py-1 rounded"
+                >
+                  {{ ip }}
+                </li>
+              </ul>
+            </div>
+
+            <!-- Total Ban History -->
+            <div
+              v-if="getDetails(jail.jail).banlist?.length > 0"
+              class="bg-purple-50 rounded-lg p-3"
+            >
+              <h4 class="font-semibold text-purple-700 text-sm mb-2">
+                📜 Total Banned ({{ getDetails(jail.jail).banlist.length }})
+              </h4>
+              <ul class="space-y-1 max-h-40 overflow-y-auto">
+                <li
+                  v-for="ip in getDetails(jail.jail).banlist"
+                  :key="ip"
+                  class="font-mono text-xs bg-white px-2 py-1 rounded"
                 >
                   {{ ip }}
                 </li>

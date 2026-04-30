@@ -286,6 +286,28 @@ app.get("/api/jail-status/:name", async (req, res) => {
   });
 });
 
+// Obtener historial completo de IPs baneadas en un jail
+app.get("/api/jail-banlist/:name", async (req, res) => {
+  const jailName = req.params.name;
+  
+  exec(`fail2ban-client get ${jailName} banlist`, (err, stdout) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    const ips = stdout.split("\n")
+      .map(line => line.trim())
+      .filter(Boolean)
+      .filter(line => line.match(/^\d+\.\d+\.\d+\.\d+$/));
+
+    res.json({
+      jail: jailName,
+      total: ips.length,
+      ips
+    });
+  });
+});
+
 // Service status
 app.get("/api/service-status", (req, res) => {
   exec("systemctl is-active fail2ban", (err, stdout) => {

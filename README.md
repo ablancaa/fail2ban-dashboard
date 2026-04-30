@@ -222,5 +222,6 @@ MIT
 ---
 
 ## 👨‍💻 Autor
-
+Alberto Blanca Alcaide
+Graduado en Multimedia
 Fail2Ban Dashboard — proyecto personal para monitorización de seguridad SSH.

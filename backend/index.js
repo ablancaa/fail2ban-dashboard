@@ -1,15 +1,18 @@
 import express from "express";
-import { exec } from "child_process";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
 import axios from "axios";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-console.log("🔥 BACKEND GEO LOADED CORRECTLY");
+console.log("🔥 BACKEND MULTI-SERVER AGGREGATOR LOADED");
 
 // =========================
 // APP SETUP
 // =========================
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -18,6 +21,20 @@ const server = createServer(app);
 const io = new Server(server, {
   cors: { origin: "*", methods: ["GET", "POST"] },
 });
+
+// =========================
+// 📋 CARGAR CONFIGURACIÓN DE SERVIDORES
+// =========================
+let serverConfig = [];
+try {
+  const configPath = path.join(__dirname, "servers.json");
+  const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+  serverConfig = config.servers || [];
+  console.log(`✅ Cargados ${serverConfig.length} servidores desde servers.json`);
+} catch (err) {
+  console.error("❌ Error cargando servers.json:", err.message);
+  process.exit(1);
+}
 
 // =========================
 // 🌍 GEO CACHE
@@ -67,7 +84,7 @@ async function getGeo(ip) {
 }
 
 // =========================
-// 🚫 GEO ENDPOINT (FIXED)
+// 🚫 GEO ENDPOINT
 // =========================
 app.get("/api/geo/:ip", async (req, res) => {
   try {
@@ -86,324 +103,318 @@ app.get("/api/geo/:ip", async (req, res) => {
 });
 
 // =========================
-// FAIL2BAN HELPERS
+// 📡 FUNCIONES PARA CONECTAR A SERVIDORES REMOTOS
 // =========================
-function getJails() {
-  return new Promise((resolve) => {
-    exec("fail2ban-client status", (err, stdout) => {
-      if (err) return resolve([]);
+async function getServerData(serverId, endpoint) {
+  try {
+    const srv = serverConfig.find(s => s.id === serverId);
+    if (!srv) throw new Error(`Servidor ${serverId} no encontrado`);
 
-      const match = stdout.match(/Jail list:\s*(.*)/);
-      if (!match) return resolve([]);
-
-      const jails = match[1].split(/\s*,\s*/).filter(Boolean);
-      resolve(jails);
-    });
-  });
+    const url = `http://${srv.ip}:${srv.port}${endpoint}`;
+    const res = await axios.get(url, { timeout: 5000 });
+    return res.data;
+  } catch (err) {
+    console.error(`❌ Error conectando a ${serverId}:`, err.message);
+    throw err;
+  }
 }
 
-function getJailStatus(jail) {
-  return new Promise((resolve) => {
-    exec(`fail2ban-client status ${jail}`, (err, stdout) => {
-      if (err) return resolve({ jail, error: err.message });
+async function postServerData(serverId, endpoint, data) {
+  try {
+    const srv = serverConfig.find(s => s.id === serverId);
+    if (!srv) throw new Error(`Servidor ${serverId} no encontrado`);
 
-      const match = stdout.match(/Banned IP list:\s*(.*)/);
-
-      const banned = match?.[1]
-        ? match[1].split(/\s+/).filter(Boolean)
-        : [];
-
-      resolve({
-        jail,
-        bannedCount: banned.length,
-        banned,
-      });
-    });
-  });
+    const url = `http://${srv.ip}:${srv.port}${endpoint}`;
+    const res = await axios.post(url, data, { timeout: 5000 });
+    return res.data;
+  } catch (err) {
+    console.error(`❌ Error conectando a ${serverId}:`, err.message);
+    throw err;
+  }
 }
 
 // =========================
-// 📡 SOCKET
+// 📡 SOCKET - AGREGAR DATOS DE MÚLTIPLES SERVIDORES
 // =========================
 io.on("connection", (socket) => {
+  console.log("✅ Cliente conectado");
+
   const lastBanned = {};
 
-  async function sendStatus() {
-    const jails = await getJails();
+  async function sendAggregatedStatus() {
+    try {
+      const allServersData = {};
 
-    if (!jails.length) {
-      socket.emit("status", []);
-      return;
-    }
+      // Conectar a cada servidor y agregar datos
+      for (const srv of serverConfig) {
+        if (!srv.enabled) continue;
 
-    const result = [];
-
-    for (const jail of jails) {
-      const data = await getJailStatus(jail);
-
-      const prev = lastBanned[jail] || [];
-      const newIPs = data.banned.filter((ip) => !prev.includes(ip));
-
-      if (newIPs.length > 0) {
-        const enriched = await Promise.all(
-          newIPs.map(async (ip) => ({
-            ip,
-            geo: await getGeo(ip),
-          }))
-        );
-
-        socket.emit("alert", {
-          jail,
-          ips: enriched,
-        });
-      }
-
-      lastBanned[jail] = data.banned;
-      result.push(data);
-    }
-
-    socket.emit("status", result);
-  }
-
-  sendStatus();
-  const interval = setInterval(sendStatus, 5000);
-
-  socket.on("refresh", sendStatus);
-  socket.on("disconnect", () => clearInterval(interval));
-});
-
-// =========================
-// 🌐 REST API
-// =========================
-
-// Jails
-app.get("/api/jails", async (req, res) => {
-  const jails = await getJails();
-  res.json(jails);
-});
-
-// =========================
-// 📦 JAIL CONFIG
-// =========================
-app.get("/api/jail-config", async (req, res) => {
-  const { jail } = req.query;
-
-  // 📁 Config global si no hay jail
-  if (!jail) {
-    exec("cat /etc/fail2ban/jail.local", (err, stdout) => {
-      if (err) {
-        exec("cat /etc/fail2ban/jail.conf", (err2, stdout2) => {
-          if (err2) {
-            return res.status(500).json({ error: "No se encontró configuración" });
+        try {
+          const jails = await getServerData(srv.id, "/api/jails");
+          
+          if (!jails || jails.length === 0) {
+            allServersData[srv.id] = {
+              serverId: srv.id,
+              serverName: srv.name,
+              serverHostname: srv.hostname,
+              serverIp: srv.ip,
+              status: "error",
+              jails: [],
+              error: "No jails found"
+            };
+            continue;
           }
-          res.json({ config: stdout2 });
-        });
-      } else {
-        res.json({ config: stdout });
+
+          const jailsWithStatus = [];
+          for (const jail of jails) {
+            const jailData = await getServerData(srv.id, `/api/jails/${jail}`);
+            jailsWithStatus.push(jailData);
+          }
+
+          allServersData[srv.id] = {
+            serverId: srv.id,
+            serverName: srv.name,
+            serverHostname: srv.hostname,
+            serverIp: srv.ip,
+            status: "running",
+            jails: jailsWithStatus
+          };
+        } catch (err) {
+          console.warn(`⚠️ Error obteniendo datos de ${srv.id}:`, err.message);
+          allServersData[srv.id] = {
+            serverId: srv.id,
+            serverName: srv.name,
+            serverHostname: srv.hostname,
+            serverIp: srv.ip,
+            status: "error",
+            jails: [],
+            error: err.message
+          };
+        }
       }
-    });
-    return;
+
+      socket.emit("status", allServersData);
+    } catch (err) {
+      console.error("Error en sendAggregatedStatus:", err);
+    }
   }
 
-  // 📊 Config de un jail concreto
-  exec(`fail2ban-client get ${jail} ban-time`, (err, stdout) => {
-    if (err) return res.status(500).json({ error: err.message });
+  sendAggregatedStatus();
+  const interval = setInterval(sendAggregatedStatus, 5000);
 
-    const banTime = parseInt(stdout.match(/(\d+)/)?.[1] || 0);
-
-    exec(`fail2ban-client get ${jail} maxretry`, (err2, stdout2) => {
-      if (err2) return res.status(500).json({ error: err2.message });
-
-      const maxRetry = parseInt(stdout2.match(/(\d+)/)?.[1] || 0);
-
-      res.json({
-        jail,
-        banTime,
-        maxRetry,
-      });
-    });
+  socket.on("refresh", sendAggregatedStatus);
+  socket.on("disconnect", () => {
+    clearInterval(interval);
+    console.log("🔌 Cliente desconectado");
   });
 });
 
-// Unban IP
-app.post("/api/unban", (req, res) => {
-  const { jail, ip } = req.body;
+// =========================
+// 🌐 REST API - MÚLTIPLES SERVIDORES
+// =========================
 
-  if (!jail || !ip) {
-    return res.status(400).json({ error: "Falta jail o IP" });
-  }
-
-  exec(`fail2ban-client set ${jail} unbanip ${ip}`, (err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ success: true });
-  });
+// Obtener lista de servidores configurados
+app.get("/api/servers", (req, res) => {
+  const servers = serverConfig.map(s => ({
+    id: s.id,
+    name: s.name,
+    hostname: s.hostname,
+    ip: s.ip,
+    enabled: s.enabled,
+    description: s.description
+  }));
+  res.json({ servers });
 });
 
-// Obtener información completa de un jail
-app.get("/api/jail-status/:name", async (req, res) => {
-  const jailName = req.params.name;
-  
-  exec(`fail2ban-client status ${jailName}`, (err, stdout) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
+// Agregar nuevo servidor
+app.post("/api/servers", (req, res) => {
+  try {
+    const { name, hostname, ip, port, description } = req.body;
+    
+    if (!name || !hostname || !ip) {
+      return res.status(400).json({ error: "Faltan campos requeridos" });
     }
 
-    // Parsear la salida
-    const result = {
-      jail: jailName,
-      filter: {},
-      actions: {}
+    const newServer = {
+      id: hostname.split(".")[0].toLowerCase(),
+      name,
+      hostname,
+      ip,
+      port: port || 3000,
+      enabled: true,
+      description: description || ""
     };
 
-    // Currently failed
-    const currentlyFailedMatch = stdout.match(/Currently failed:\s*(\d+)/);
-    if (currentlyFailedMatch) result.filter.currentlyFailed = parseInt(currentlyFailedMatch[1]);
+    serverConfig.push(newServer);
+    
+    // Guardar en archivo
+    const configPath = path.join(__dirname, "servers.json");
+    fs.writeFileSync(configPath, JSON.stringify({ servers: serverConfig }, null, 2));
 
-    // Total failed
-    const totalFailedMatch = stdout.match(/Total failed:\s*(\d+)/);
-    if (totalFailedMatch) result.filter.totalFailed = parseInt(totalFailedMatch[1]);
+    res.json({ success: true, server: newServer });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-    // Journal matches
-    const journalMatch = stdout.match(/Journal matches:\s*(.*)/);
-    if (journalMatch) result.filter.journalMatches = journalMatch[1].trim();
+// Actualizar servidor
+app.put("/api/servers/:id", (req, res) => {
+  try {
+    const { enabled, description } = req.body;
+    const server = serverConfig.find(s => s.id === req.params.id);
+    
+    if (!server) {
+      return res.status(404).json({ error: "Servidor no encontrado" });
+    }
 
-    // Currently banned
-    const currentlyBannedMatch = stdout.match(/Currently banned:\s*(\d+)/);
-    if (currentlyBannedMatch) result.actions.currentlyBanned = parseInt(currentlyBannedMatch[1]);
+    if (enabled !== undefined) server.enabled = enabled;
+    if (description !== undefined) server.description = description;
 
-    // Total banned
-    const totalBannedMatch = stdout.match(/Total banned:\s*(\d+)/);
-    if (totalBannedMatch) result.actions.totalBanned = parseInt(totalBannedMatch[1]);
+    const configPath = path.join(__dirname, "servers.json");
+    fs.writeFileSync(configPath, JSON.stringify({ servers: serverConfig }, null, 2));
 
-    // Banned IP list
-    const bannedMatch = stdout.match(/Banned IP list:\s*(.*)/);
-    if (bannedMatch) {
-      const ips = bannedMatch[1].split(/\s+/).filter(Boolean);
-      result.actions.bannedIPs = ips;
+    res.json({ success: true, server });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Eliminar servidor
+app.delete("/api/servers/:id", (req, res) => {
+  try {
+    const idx = serverConfig.findIndex(s => s.id === req.params.id);
+    
+    if (idx === -1) {
+      return res.status(404).json({ error: "Servidor no encontrado" });
+    }
+
+    const removed = serverConfig.splice(idx, 1)[0];
+
+    const configPath = path.join(__dirname, "servers.json");
+    fs.writeFileSync(configPath, JSON.stringify({ servers: serverConfig }, null, 2));
+
+    res.json({ success: true, removed });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Obtener todos los jails de todos los servidores
+app.get("/api/jails", async (req, res) => {
+  try {
+    const result = {};
+
+    for (const srv of serverConfig) {
+      if (!srv.enabled) continue;
+
+      try {
+        const data = await getServerData(srv.id, "/api/jails");
+        result[srv.id] = {
+          server: srv,
+          jails: data || []
+        };
+      } catch (err) {
+        result[srv.id] = {
+          server: srv,
+          error: err.message,
+          jails: []
+        };
+      }
     }
 
     res.json(result);
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Obtener historial completo de IPs baneadas en un jail
-app.get("/api/jail-banlist/:name", async (req, res) => {
-  const jailName = req.params.name;
-
-  exec(`fail2ban-client get ${jailName} banlist`, async (err, stdout) => {
-    if (err || !stdout) {
-      return res.json({
-        jail: jailName,
-        total: 0,
-        ips: []
-      });
-    }
-
-    const ips = stdout
-      .split(/[\s\n]+/)
-      .map(ip => ip.trim())
-      .filter(ip => /^\d+\.\d+\.\d+\.\d+$/.test(ip));
-
-    const ipsWithGeo = await Promise.all(
-      ips.map(async (ip) => {
-        const geo = await getGeo(ip);
-        return { ip, geo };
-      })
-    );
-
-    res.json({
-      jail: jailName,
-      total: ips.length,
-      ips: ipsWithGeo
-    });
-  });
+// Obtener jails de un servidor específico
+app.get("/api/servers/:serverId/jails", async (req, res) => {
+  try {
+    const data = await getServerData(req.params.serverId, "/api/jails");
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Service status
-app.get("/api/service-status", (req, res) => {
-  exec("systemctl is-active fail2ban", (err, stdout) => {
-    const state = stdout?.trim();
-
-    if (state === "active") return res.json({ status: "running" });
-    if (state === "inactive") return res.json({ status: "stopped" });
-
-    return res.json({ status: "error" });
-  });
+// Obtener estado de un jail específico de un servidor
+app.get("/api/servers/:serverId/jails/:jail", async (req, res) => {
+  try {
+    const data = await getServerData(req.params.serverId, `/api/jails/${req.params.jail}`);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Logs bans
-app.get("/api/fail2ban-bans", async (req, res) => {
-  exec(`zgrep "Ban" /var/log/fail2ban.log*`, async (err, stdout) => {
-    if (err) {
-      return res.status(500).json({ error: err.message, bans: [] });
-    }
+// Unban IP en un servidor específico
+app.post("/api/servers/:serverId/unban", async (req, res) => {
+  try {
+    const data = await postServerData(req.params.serverId, "/api/unban", req.body);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-    const lines = stdout.split("\n").filter(Boolean);
+// Obtener configuración de jail de un servidor específico
+app.get("/api/servers/:serverId/jail-config", async (req, res) => {
+  try {
+    const data = await getServerData(req.params.serverId, "/api/jail-config?" + new URLSearchParams(req.query).toString());
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-    // 🔥 IPs únicas
-    const uniqueIPs = [...new Set(
-      lines
-        .map(line => line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/)?.[1])
-        .filter(Boolean)
-    )];
+// Obtener status del servicio en un servidor específico
+app.get("/api/servers/:serverId/service-status", async (req, res) => {
+  try {
+    const data = await getServerData(req.params.serverId, "/api/service-status");
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-    // 🌍 GEO para todas las IPs (con cache interna getGeo)
-    const geoMap = {};
+// Obtener bans históricos de un servidor específico
+app.get("/api/servers/:serverId/fail2ban-bans", async (req, res) => {
+  try {
+    const data = await getServerData(req.params.serverId, "/api/fail2ban-bans");
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-    await Promise.all(
-      uniqueIPs.map(async (ip) => {
-        geoMap[ip] = await getGeo(ip);
-      })
-    );
+// Obtener estado de jail específico de un servidor
+app.get("/api/servers/:serverId/jail-status/:name", async (req, res) => {
+  try {
+    const data = await getServerData(req.params.serverId, `/api/jail-status/${req.params.name}`);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-    // 🧱 construir bans enriquecidos
-    const bans = lines
-      .map(line => {
-        const ipMatch = line.match(/Ban\s+(\d+\.\d+\.\d+\.\d+)/);
-        const timeMatch = line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
-        
-        // Buscar jail en diferentes formatos:
-        // [sshd] Ban 1.2.3.4
-        // 2026-01-01 12:00:00,000 fail2ban[123]: INFO [sshd] Ban 1.2.3.4
-        // fail2ban.actions[123]: WARNING [nginx-http-auth] Ban 1.2.3.4
-        let jail = null;
-        
-        // Intento 1: [jail] antes de Ban
-        const match1 = line.match(/\[([^\]]+)\]\s+Ban/i);
-        // Intento 2: fail2ban[jail]: o similar
-        const match2 = line.match(/fail2ban[.\w]*\[[^\]]*\]\s*:\s*\w+\s*\[([^\]]+)\]/i);
-        // Intento 3: después de la fecha y fail2ban
-        const match3 = line.match(/fail2ban[^\[]*\[([^\]]+)\]/i);
-        
-        if (match1) jail = match1[1];
-        else if (match2) jail = match2[1];
-        else if (match3) jail = match3[1];
-
-        if (!ipMatch) return null;
-
-        const ip = ipMatch[1];
-
-        return {
-          ip,
-          jail: jail,
-          geo: geoMap[ip] || null,
-          timestamp: timeMatch ? timeMatch[1] : null,
-          raw: line
-        };
-      })
-      .filter(Boolean)
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-    res.json({
-      total: bans.length,
-      bans
-    });
-  });
+// Obtener lista de bans de un jail en un servidor
+app.get("/api/servers/:serverId/jail-banlist/:name", async (req, res) => {
+  try {
+    const data = await getServerData(req.params.serverId, `/api/jail-banlist/${req.params.name}`);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // =========================
 // 🚀 START SERVER
 // =========================
 server.listen(3000, () => {
-  console.log("🚀 Fail2Ban backend running on port 3000");
+  console.log("🚀 Fail2Ban Multi-Server Aggregator running on port 3000");
+  console.log(`📡 Conectado a ${serverConfig.filter(s => s.enabled).length} servidores`);
+  serverConfig.forEach(srv => {
+    console.log(`   ${srv.enabled ? "✅" : "❌"} ${srv.name} (${srv.hostname}:${srv.ip})`);
+  });
 });

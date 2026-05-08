@@ -89,7 +89,7 @@
       <router-link to="/LogHistoryView">
         <button class="mobile-btn flex items-center justify-between">
           <span>📄 Logs History</span>
-          <span class="badge">{{ store.bans.length }}</span>
+          <span class="bg-blue-500 text-xs px-2 py-0.5 rounded-full">{{ store.bans.length }}</span>
         </button>
       </router-link>
     </div>

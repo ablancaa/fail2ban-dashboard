@@ -21,7 +21,7 @@ import "leaflet.markercluster/dist/leaflet.markercluster.js";
 // ✅ 1. Restauramos correctamente las imágenes físicas de los iconos para Vite
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
-
+const API_BASE = "http://192.168.1.137:3000";
 let map = null;
 let socket = null;
 let markerClusterGroup = null;
@@ -57,7 +57,7 @@ onMounted(() => {
   map.addLayer(markerClusterGroup);
 
   // 4. Conectar al WebSocket del backend agregador
-  socket = io("http://localhost:3000");
+  socket = io(API_BASE);
 
   socket.on("status", (allServersData) => {
     // Limpiamos los clusters anteriores de forma eficiente

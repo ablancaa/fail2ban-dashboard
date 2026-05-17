@@ -5,7 +5,7 @@ import JailsView from '@/views/JailsView.vue'
 import BannedIpView from '@/views/BannedIpView.vue'
 import JailConfigView from '@/views/JailConfigView.vue'
 import LogHistoryView from '@/views/LogHistoryView.vue'
-
+import MapaView from '@/views/MapaView.vue'
 
 
 const router = createRouter({
@@ -36,6 +36,11 @@ const router = createRouter({
       path: '/LogHistoryView',
       name: 'LogHistoryView',
       component: LogHistoryView
+    },
+    {
+      path: '/MapaView',
+      name: 'MapaView',
+      component: MapaView
     }
   ],
 })

@@ -38,6 +38,15 @@
             <span class="badge">{{ store.bans.length }}</span>
           </button></router-link
         >
+
+        <router-link to="/MapaView">
+          <button class="mobile-btn flex items-center justify-between">
+            <span>🗺️ Mapa</span>
+            <span v-if="store.alerts > 0" class="badge-red">
+              {{ store.alerts }}
+            </span>
+          </button>
+        </router-link>
       </div>
 
       <!-- RIGHT -->
@@ -89,7 +98,18 @@
       <router-link to="/LogHistoryView">
         <button class="mobile-btn flex items-center justify-between">
           <span>📄 Logs History</span>
-          <span class="bg-blue-500 text-xs px-2 py-0.5 rounded-full">{{ store.bans.length }}</span>
+          <span class="bg-blue-500 text-xs px-2 py-0.5 rounded-full">{{
+            store.bans.length
+          }}</span>
+        </button>
+      </router-link>
+
+      <router-link to="/MapaView">
+        <button class="mobile-btn flex items-center justify-between">
+          <span>🗺️ Mapa</span>
+          <span v-if="store.alerts > 0" class="badge-red">
+            {{ store.alerts }}
+          </span>
         </button>
       </router-link>
     </div>
@@ -99,6 +119,8 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useFail2BanStore } from "../stores/fail2ban";
+
+import { MapPinned } from "lucide-vue-next";
 
 const store = useFail2BanStore();
 const mobileOpen = ref(false);

@@ -64,6 +64,8 @@ async function getGeo(ip) {
       country: res.data.country || "Unknown",
       countryCode: res.data.countryCode || "XX",
       city: res.data.city || "",
+      lat: res.data.lat || 0,
+      lon: res.data.lon || 0
     };
 
     geoCache.set(ip, data);

@@ -23,8 +23,8 @@
         <router-link to="/BannedIpView"
           ><button class="nav-btn">
             🚨 Alertas
-            <span v-if="store.alerts > 0" class="badge-red">
-              {{ store.alerts }}
+            <span v-if="store.logs.length > 0" class="badge-red">
+              {{ store.logs.length }}
             </span>
           </button></router-link
         >
@@ -85,8 +85,8 @@
       <router-link to="/BannedIpView">
         <button class="mobile-btn flex items-center justify-between">
           <span>🚨 Alertas</span>
-          <span v-if="store.alerts > 0" class="badge-red">
-            {{ store.alerts }}
+          <span v-if="store.logs.length > 0" class="badge-red">
+            {{ store.logs.length }}
           </span>
         </button></router-link
       >

@@ -13,6 +13,8 @@ import { onMounted, onUnmounted } from "vue";
 import { io } from "socket.io-client";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 window.L = L; // 👈 Registramos L en la ventana del navegador inmediatamente
 
 // Ahora que window.L existe de forma garantizada, importamos el JS del plugin
@@ -59,47 +61,68 @@ onMounted(() => {
   // 4. Conectar al WebSocket del backend agregador
   socket = io(API_BASE);
 
-  socket.on("status", (allServersData) => {
-    // Limpiamos los clusters anteriores de forma eficiente
+  // 🔌 Escuchar el WebSocket adaptado al formato plano del backend
+  socket.on("status", (flatJailsData) => {
+    // 1. Limpiamos los clusters anteriores de forma eficiente
     markerClusterGroup.clearLayers();
 
     const batchMarkers = [];
 
-    // Recorrer la estructura del agregador multi-servidor
-    Object.values(allServersData).forEach((server) => {
-      if (server.status !== "running") return;
-
-      server.jails.forEach((jail) => {
+    // 2. Como el backend ya envía un array plano de cárceles, iteramos directamente
+    if (Array.isArray(flatJailsData)) {
+      flatJailsData.forEach((jail) => {
+        // Validamos que la cárcel contenga geolocalizaciones válidas
         if (jail.geoBannedIPs && Array.isArray(jail.geoBannedIPs)) {
           jail.geoBannedIPs.forEach((geo) => {
-            if (!geo.lat || !geo.lon) return;
+            // Si no hay coordenadas reales de geoip-lite, saltamos la iteración
+            if (!geo || isNaN(geo.lat) || isNaN(geo.lon)) return;
 
+            // Construcción del popup enriquecido
             const popupInfo = `
-              <div class="map-popup">
-                <h4>🚨 IP Baneada</h4>
-                <p><strong>Origen:</strong> ${server.serverName} (${server.serverIp})</p>
-                <p><strong>IP:</strong> <span class="highlight">${geo.ip}</span></p>
-                <p><strong>Ubicación:</strong> ${geo.city ? geo.city + ", " : ""}${
-              geo.country
-            } (${geo.countryCode})</p>
-                <p><strong>Jail afectada:</strong> <span class="jail-badge">${
-                  jail.name || "Desconocida"
-                }</span></p>
-              </div>
-            `;
+            <div class="map-popup">
+              <h4>🚨 IP Baneada</h4>
+              <p><strong>Servidor Origen:</strong> ${jail.server || "Desconocido"}</p>
+              <p><strong>IP:</strong> <span class="highlight">${geo.ip}</span></p>
+              <p>
+<strong>Ubicación:</strong>
+${countryCodeToFlag(geo.countryCode)}
+${geo.city ? geo.city + ", " : ""}
+${geo.country || "Desconocido"}
+</p>
+              <p><strong>Jail afectada:</strong> <span class="jail-badge">${
+                jail.jail || "Desconocida"
+              }</span></p>
+            </div>
+          `;
 
-            const marker = L.marker([geo.lat, geo.lon]).bindPopup(popupInfo);
+            // Crear marcador e insertarlo al lote
+            const marker = L.circleMarker([geo.lat, geo.lon], {
+              radius: 8,
+              fillColor: "#ff3b3b",
+              color: "#ffffff",
+              weight: 1,
+              opacity: 1,
+              fillOpacity: 0.8,
+            }).bindPopup(popupInfo);
             batchMarkers.push(marker);
           });
         }
       });
-    });
+    }
 
+    // 3. Añadir todos los marcadores de golpe al mapa
     if (batchMarkers.length > 0) {
       markerClusterGroup.addLayers(batchMarkers);
     }
   });
+  // Al final de tu onMounted(), justo debajo de socket.on("status", ...), añade esto:
 });
+
+function countryCodeToFlag(code) {
+  return code
+    ?.toUpperCase()
+    .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt()));
+}
 
 onUnmounted(() => {
   if (socket) socket.disconnect();
@@ -108,16 +131,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* ✅ Dejar que el compilador de CSS de Vite maneje las rutas del plugin */
-@import "leaflet.markercluster/dist/MarkerCluster.css";
-@import "leaflet.markercluster/dist/MarkerCluster.Default.css";
-
-.dashboard-container {
-  width: 100%;
-  height: 100vh;
-  display: flex;
-}
-
 .dashboard-container {
   width: 100%;
   height: 100vh;
@@ -147,19 +160,26 @@ onUnmounted(() => {
 
 #map {
   flex-grow: 1;
+  width: 100%;
+  min-height: 500px;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
   border: 1px solid #2c2c2c;
+  position: relative;
 }
 
-/* Estilos para el interior del Popup de Leaflet */
+/* Estilos internos del Popup (usando :deep porque Leaflet inyecta el HTML fuera de Vue) */
 :deep(.map-popup) {
   color: #333;
   font-size: 0.85rem;
+  line-height: 1.4;
 }
 :deep(.map-popup h4) {
   margin: 0 0 8px 0;
   color: #d32f2f;
+  font-size: 0.95rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 4px;
 }
 :deep(.map-popup p) {
   margin: 4px 0;
@@ -167,9 +187,11 @@ onUnmounted(() => {
 :deep(.highlight) {
   font-weight: bold;
   color: #111;
+  font-family: monospace;
 }
 :deep(.jail-badge) {
   background-color: #ffeb3b;
+  color: #000;
   padding: 2px 6px;
   border-radius: 4px;
   font-weight: bold;

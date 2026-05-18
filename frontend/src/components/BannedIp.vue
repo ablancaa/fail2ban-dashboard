@@ -1,165 +1,137 @@
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useFail2BanStore } from "../stores/fail2ban";
+//import { AlertTriangle } from "lucide-vue-next";
 
 const store = useFail2BanStore();
-const open = ref(false);
 
-// Usar store directamente en lugar de computed
-let logs = ref([]);
-let jails = ref([]);
-
-onMounted(() => {
-  store.fetchBans();
-});
-
-// Sincronizar con el store
-const syncLogs = () => {
-  logs.value = store.logs;
-  jails.value = store.jails;
-};
-
-// Watch para detectar cambios en los logs y actualizar automáticamente
-watch(
-  () => store.logs,
-  (newLogs) => {
-    logs.value = [...newLogs]; // Forzar nueva referencia
-  },
-  { deep: true }
-);
-
-// Sincronización inicial
-syncLogs();
-
-const toggle = () => {
-  open.value = !open.value;
-};
-
-// 📅 Formateo seguro de fecha Fail2Ban
-const formatTimestamp = (timestamp) => {
-  if (!timestamp) return "Fecha no disponible";
-
-  const date = new Date(timestamp);
-
-  if (isNaN(date.getTime())) {
-    return timestamp; // fallback si no parsea
-  }
-
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(date);
-};
-
-// 🌍 bandera
-const getFlagEmoji = (code) => {
-  if (!code) return "🌍";
-  return code
-    .toUpperCase()
-    .split("")
-    .map((c) => 127397 + c.charCodeAt(0))
-    .reduce((a, b) => String.fromCodePoint(a, b));
-};
-
-// Unban IP
+const openServers = ref({});
 const unbanLoading = ref({});
 
-const handleUnban = async (log) => {
-  if (!log.jail) {
-    alert("No hay información del jail");
-    return;
+onMounted(() => {
+  store.connectSocket();
+});
+
+// 📦 datos
+const servers = computed(() => store.servers);
+
+// 🔥 flatten IPs por servidor (SIN jails visibles)
+const getServerIps = (server) => {
+  const ips = [];
+
+  for (const jail of server.jails || []) {
+    for (const ip of jail.geoBannedIPs || []) {
+      ips.push({
+        ...ip,
+        jail: jail.name,
+        server: server.serverName,
+      });
+    }
   }
 
-  unbanLoading.value[log.ip] = true;
+  return ips;
+};
+
+// 🔢 contador por servidor
+const getTotalIps = (server) => getServerIps(server).length;
+
+// toggle
+const toggleServer = (id) => {
+  openServers.value[id] = !openServers.value[id];
+};
+
+// 🌍 bandera real (imagen)
+const flagUrl = (code) =>
+  code ? `https://flagcdn.com/24x18/${code.toLowerCase()}.png` : "";
+
+// 🚫 unban
+const handleUnban = async (item) => {
+  if (!item.jail) return;
+
+  unbanLoading.value[item.ip] = true;
+
   try {
-    await store.unbanIP(log.jail, log.ip);
-    alert(`IP ${log.ip} liberada del jail ${log.jail}`);
-    // Sincronizar después del unban
-    syncLogs();
+    await store.unbanIP(item.jail, item.ip);
     await store.refresh();
-    await store.fetchBans();
-  } catch (err) {
-    alert("Error al hacer unban");
   } finally {
-    unbanLoading.value[log.ip] = false;
+    unbanLoading.value[item.ip] = false;
   }
 };
 </script>
 
 <template>
-  <div class="w-full max-w-6xl mx-auto">
+  <div class="w-full max-w-7xl mx-auto space-y-4">
+    <!-- SERVIDORES -->
     <div
-      class="flex items-center justify-between bg-slate-900 text-white px-4 py-3 rounded-xl shadow-md cursor-pointer"
-      @click="toggle"
+      v-for="server in servers"
+      :key="server.serverId"
+      class="bg-slate-900 text-white rounded-xl border border-slate-700"
     >
-      <div class="flex items-center gap-2">
-        <span>🚫</span>
-        <h2 class="font-semibold">IPs baneadas (logs)</h2>
-        <span class="bg-red-500 text-xs px-2 py-0.5 rounded-full">
-          {{ logs.length }}
-        </span>
+      <!-- HEADER -->
+      <div
+        class="flex justify-between items-center px-4 py-3 cursor-pointer"
+        @click="toggleServer(server.serverId)"
+      >
+        <div class="flex items-center gap-3">
+          🖥️
+          <span class="font-semibold">
+            {{ server.serverName }}
+          </span>
+
+          <!-- 🔴 contador -->
+          <span
+            class="bg-red-600 text-white text-xs font-bold w-9 h-7 flex items-center justify-center rounded-full"
+          >
+            {{ getTotalIps(server) }}
+          </span>
+        </div>
+
+        <div>
+          {{ openServers[server.serverId] ? "▲" : "▼" }}
+        </div>
       </div>
-      <div :style="{ transform: open ? 'rotate(0deg)' : 'rotate(180deg)' }">▼</div>
-    </div>
 
-    <div
-      v-if="open"
-      class="bg-white white:bg-slate-900 border rounded-xl mt-2 shadow-sm overflow-hidden"
-    >
-      <div v-if="logs.length > 0">
-        <div
-          v-for="b in logs"
-          :key="b.ip + b.timestamp"
-          class="flex items-center justify-between px-4 py-3 border-b"
-        >
-          <div class="flex flex-col gap-1 grid grid-flow-col-2 grid-rows-1 gap-1">
-            <!-- IP + bandera + país -->
-            <div class="flex items-center gap-2 font-mono text-sm">
-              <span class="text-lg"
-                ><img
-                  :src="`https://flagcdn.com/24x18/${b.geo.countryCode.toLowerCase()}.png`"
-                />
-                <!-- {{ getFlagEmoji(b.geo?.countryCode) }} -->
-              </span>
+      <!-- CONTENT -->
+      <div v-if="openServers[server.serverId]" class="p-4">
+        <!-- GRID IPS -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          <div
+            v-for="ip in getServerIps(server)"
+            :key="ip.id"
+            class="bg-slate-800 rounded-xl p-3 border border-slate-700"
+          >
+            <!-- IP + FLAG -->
+            <div class="flex items-center gap-2 mb-2">
+              <img
+                v-if="ip.countryCode"
+                :src="flagUrl(ip.countryCode)"
+                class="w-5 h-4 rounded-sm"
+              />
 
-              <span class="text-slate-900"
-                >{{ b.ip }}<br />
-                <span class="text-xs text-slate-600">
-                  {{ b.geo?.country || "Unknown" }} ({{ b.geo?.city || "Unknown" }})
-                  <!-- {{ b.geo?.country || "Unknown" }} -->
-                </span>
+              <span class="font-mono text-sm">
+                {{ ip.ip }}
               </span>
             </div>
 
-            <!-- FECHA + JAIL -->
-            <div class="flex items-center gap-2">
-              <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                {{ b.jail }}
-              </span>
-              <span class="text-xs text-slate-500">
-                🕒 {{ formatTimestamp(b.timestamp) }}
-              </span>
+            <!-- DATOS -->
+            <div class="text-xs text-slate-300 space-y-1">
+              <div>🌍 {{ ip.country }} ({{ ip.city }})</div>
+              <div>📍 {{ ip.lat?.toFixed(2) }}, {{ ip.lon?.toFixed(2) }}</div>
+              <div>🔒 Jail: {{ ip.jail }}</div>
+              <div>🖥️ Server: {{ ip.server }}</div>
             </div>
-          </div>
 
-          <div class="flex items-center gap-2">
-            <!-- Botón Unban -->
+            <!-- UNBAN -->
             <button
-              @click="handleUnban(b)"
-              :disabled="unbanLoading[b.ip] || !b.jail"
-              class="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="handleUnban(ip)"
+              :disabled="unbanLoading[ip.ip]"
+              class="mt-2 w-full bg-red-600 hover:bg-red-700 text-xs py-1 rounded disabled:opacity-50"
             >
-              {{ unbanLoading[b.ip] ? "..." : "Unban" }}
+              {{ unbanLoading[ip.ip] ? "..." : "UNBAN" }}
             </button>
           </div>
         </div>
       </div>
-
-      <div v-else class="p-4 text-gray-500 text-sm">No hay IPs baneadas</div>
     </div>
   </div>
 </template>

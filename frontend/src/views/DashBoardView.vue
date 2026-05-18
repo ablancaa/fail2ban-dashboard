@@ -1,227 +1,261 @@
-<template>
-  <div class="max-w-6xl mx-auto p-4">
-    <h1 class="text-2xl md:text-3xl font-bold mb-4 flex items-center gap-2">
-      <img src="/src/assets/Fail2ban_logo.png" class="w-25 h-20" />
-      Fail2Ban Dashboard
-    </h1>
-
-    <!-- STATUS BAR -->
-    <div
-      class="bg-white rounded-xl shadow p-4 mb-4 flex justify-between items-center flex-wrap gap-3"
-    >
-      <div class="flex items-center gap-2">
-        <div
-          class="w-3 h-3 rounded-full animate-pulse"
-          :class="{
-            'bg-green-500': serviceStatus === 'running',
-            'bg-red-500': serviceStatus === 'stopped',
-            'bg-yellow-400': serviceStatus === 'error',
-            'bg-gray-400': serviceStatus === 'loading',
-          }"
-        />
-        <span class="font-semibold">
-          Fail2Ban:
-          {{
-            serviceStatus === "running"
-              ? "Activo"
-              : serviceStatus === "stopped"
-              ? "Parado"
-              : serviceStatus === "error"
-              ? "Error"
-              : "Cargando..."
-          }}
-        </span>
-      </div>
-    </div>
-
-    <!-- CLOCK -->
-    <div class="mb-4 font-mono text-sm bg-white p-2 rounded shadow w-fit">
-      🕒 {{ clock }}
-    </div>
-
-    <!-- TABLE -->
-    <div class="bg-white rounded-xl shadow p-4 overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b">
-            <th class="text-left p-2">Jail</th>
-            <th class="text-left p-2">IPs baneadas</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr v-for="jail in store.jails" :key="jail.jail" class="border-b">
-            <td class="p-2 font-semibold">
-              {{ jail.jail }}
-              <span class="text-xs text-gray-500">({{ jail.server }})</span>
-            </td>
-
-            <!-- IP LIST -->
-            <td class="p-2">
-              <div class="flex flex-wrap gap-1 max-h-28 overflow-y-auto pr-2">
-                <div
-                  v-for="ip in jail.bannedIPs"
-                  :key="ip"
-                  class="flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded text-xs"
-                >
-                  <!-- FLAG -->
-                  <img
-                    :src="`https://flagcdn.com/24x18/${
-                      getGeo(ip)?.countryCode?.toLowerCase() || 'xx'
-                    }.png`"
-                    class="w-4 h-3"
-                  />
-
-                  <span class="font-mono">{{ ip }}</span>
-
-                  <button
-                    class="ml-1 text-[10px] bg-red-500 text-white px-1 rounded"
-                    @click="unbanIP(jail.jail, ip)"
-                  >
-                    unBan
-                  </button>
-                </div>
-
-                <span v-if="!jail.bannedIPs?.length" class="text-gray-400 text-xs">
-                  Sin IPs
-                </span>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- TOTAL -->
-    <div class="mt-4 font-semibold">Total IPs: {{ totalBanned }}</div>
-    <div class="mt-6 bg-white rounded-xl shadow p-4">
-      <h2 class="font-semibold mb-2">IPs bloqueadas por Jail</h2>
-
-      <div class="h-64">
-        <canvas id="chart"></canvas>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+
 import { useFail2BanStore } from "@/stores/fail2ban";
-import axios from "axios";
-import Chart from "chart.js/auto";
 
 const store = useFail2BanStore();
 
-const API = "http://192.168.1.137:3000";
+const openServers = ref({});
+const isDesktop = ref(false);
+const loadingAction = ref({});
 
-const serviceStatus = ref("loading");
-const clock = ref("");
-let chart = null;
-
-const geoCache = ref({});
-
-/* ---------------- CLOCK ---------------- */
-setInterval(() => {
-  clock.value = new Date().toLocaleString();
-}, 1000);
-
-/* ---------------- GEO ---------------- */
-const getGeo = (ip) => geoCache.value[ip] || null;
-
-const loadGeo = async () => {
-  const ips = new Set();
-
-  store.jails.forEach((j) => j.bannedIPs?.forEach((ip) => ips.add(ip)));
-
-  for (const ip of ips) {
-    if (!geoCache.value[ip]) {
-      try {
-        const res = await axios.get(`${API}/api/geo/${ip}`);
-        geoCache.value[ip] = res.data;
-      } catch {}
-    }
-  }
-};
-
-/* ---------------- STATUS ---------------- */
-const fetchStatus = async () => {
-  try {
-    const res = await axios.get(`${API}/api/service-status`);
-    serviceStatus.value = res.data.status || "error";
-  } catch {
-    serviceStatus.value = "error";
-  }
-};
-
-/* ---------------- TOTAL ---------------- */
-const totalBanned = computed(() =>
-  store.jails.reduce((a, j) => a + (j.bannedIPs?.length || 0), 0)
-);
-
-/* ---------------- CHART ---------------- */
-const initChart = () => {
-  const ctx = document.getElementById("chart");
-
-  chart = new Chart(ctx, {
-    type: "pie",
-    data: {
-      labels: [],
-      datasets: [
-        {
-          data: [],
-          backgroundColor: [
-            "#ef4444",
-            "#3b82f6",
-            "#f59e0b",
-            "#10b981",
-            "#8b5cf6",
-            "#ec4899",
-          ],
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-    },
-  });
-};
-
-/* 🔥 UPDATE CHART */
-const updateChart = () => {
-  if (!chart || !store.jails) return;
-
-  chart.data.labels = store.jails.map((j) => j.jail);
-  chart.data.datasets[0].data = store.jails.map((j) => j.bannedIPs?.length || 0);
-  chart.update();
-};
-
-/* ---------------- UNBAN ---------------- */
-const unbanIP = async (jail, ip) => {
-  try {
-    await axios.post(`${API}/api/unban`, { jail, ip });
-    store.socket?.emit("refresh");
-  } catch (e) {
-    console.error(e);
-  }
+/* ---------------- RESPONSIVE ---------------- */
+const checkScreen = () => {
+  isDesktop.value = window.innerWidth >= 1024;
 };
 
 /* ---------------- INIT ---------------- */
 onMounted(() => {
   store.connectSocket();
-  fetchStatus();
 
-  setInterval(fetchStatus, 5000);
+  checkScreen();
 
-  setTimeout(() => {
-    loadGeo();
-    initChart();
-    updateChart();
-  }, 800);
+  window.addEventListener("resize", checkScreen);
 });
 
-/* 🔥 REACTIVITY FIX FOR CHART */
-store.$subscribe(() => {
-  updateChart();
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", checkScreen);
 });
+
+/* ---------------- SERVERS ---------------- */
+const servers = computed(() => store.servers || []);
+
+const isOpen = (id) => {
+  return isDesktop.value ? true : openServers.value[id];
+};
+
+const toggleServer = (id) => {
+  if (isDesktop.value) return;
+
+  openServers.value[id] = !openServers.value[id];
+};
+
+/* ---------------- FLAGS ---------------- */
+const flagUrl = (code) =>
+  code && code !== "XX" ? `https://flagcdn.com/24x18/${code.toLowerCase()}.png` : "";
+
+/* ---------------- STATUS COLORS ---------------- */
+const getJailStatusColor = (count) => {
+  if (count === 0) return "bg-green-500";
+
+  if (count <= 80) return "bg-yellow-400";
+
+  return "bg-red-500";
+};
+
+/* ---------------- SERVER STATUS ---------------- */
+const getServerStatusText = (status) => {
+  if (status === "active") return "RUNNING";
+
+  if (status === "inactive") return "STOPPED";
+
+  return "ERROR";
+};
+
+const getServerStatusColor = (status) => {
+  if (status === "active") return "text-green-400";
+
+  if (status === "inactive") return "text-yellow-400";
+
+  return "text-red-400";
+};
+
+/* ---------------- ALERTAS ---------------- */
+const getServerAlerts = (server) =>
+  (server.jails || []).reduce((acc, jail) => acc + (jail.geoBannedIPs?.length || 0), 0);
+
+/* ---------------- ACTIONS ---------------- */
+const sendAction = async (server, action) => {
+  try {
+    loadingAction.value[server.serverId] = action;
+
+    await store.control(server.serverId, action);
+
+    setTimeout(() => {
+      store.refresh();
+    }, 1000);
+  } catch (e) {
+    console.error(e);
+
+    alert(`Error ejecutando ${action}`);
+  } finally {
+    loadingAction.value[server.serverId] = null;
+  }
+};
 </script>
+
+<template>
+  <!-- GRID SERVERS -->
+  <div
+    class="w-full max-w-7xl mx-auto p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+  >
+    <!-- SERVER CARD -->
+    <div
+      v-for="server in servers"
+      :key="server.serverId"
+      class="bg-slate-900 text-white rounded-xl border border-slate-700 flex flex-col"
+    >
+      <!-- HEADER -->
+      <div class="p-4 border-b border-slate-700">
+        <div class="flex justify-between items-start gap-2">
+          <!-- LEFT -->
+          <div class="flex items-start gap-3">
+            <span class="text-xl">🖥️</span>
+
+            <div>
+              <!-- SERVER NAME -->
+              <div class="font-semibold text-sm">
+                {{ server.serverName }}
+              </div>
+
+              <!-- STATUS -->
+              <div class="text-xs text-slate-400 flex items-center gap-2 mt-1">
+                Estado:
+
+                <span
+                  :class="getServerStatusColor(server.status)"
+                  class="flex items-center gap-2 font-semibold"
+                >
+                  <span class="w-2 h-2 rounded-full bg-current animate-ping"></span>
+
+                  {{ getServerStatusText(server.status) }}
+                </span>
+              </div>
+
+              <!-- ALERTAS -->
+              <div class="mt-2 flex items-center gap-2">
+                <span class="text-red-400 text-base">🚨</span>
+
+                <span
+                  class="px-2 py-0.5 rounded-full font-bold text-[10px] animate-pulse text-white"
+                  :class="getJailStatusColor(getServerAlerts(server))"
+                >
+                  {{ getServerAlerts(server) }} alerts
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ACTIONS -->
+          <div class="flex gap-1 flex-wrap justify-end">
+            <!-- START -->
+            <button
+              class="bg-green-600 hover:bg-green-500 transition px-2 py-1 rounded text-xs disabled:opacity-50"
+              :disabled="loadingAction[server.serverId]"
+              @click="sendAction(server, 'start')"
+            >
+              {{ loadingAction[server.serverId] === "start" ? "..." : "Start" }}
+            </button>
+
+            <!-- STOP -->
+            <button
+              class="bg-red-600 hover:bg-red-500 transition px-2 py-1 rounded text-xs disabled:opacity-50"
+              :disabled="loadingAction[server.serverId]"
+              @click="sendAction(server, 'stop')"
+            >
+              {{ loadingAction[server.serverId] === "stop" ? "..." : "Stop" }}
+            </button>
+
+            <!-- RESTART -->
+            <button
+              class="bg-yellow-500 hover:bg-yellow-400 transition px-2 py-1 rounded text-xs disabled:opacity-50"
+              :disabled="loadingAction[server.serverId]"
+              @click="sendAction(server, 'restart')"
+            >
+              {{ loadingAction[server.serverId] === "restart" ? "..." : "Restart" }}
+            </button>
+          </div>
+        </div>
+
+        <!-- TOGGLE MOBILE -->
+        <div v-if="!isDesktop" class="flex justify-end mt-3">
+          <button
+            class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-xs transition"
+            @click="toggleServer(server.serverId)"
+          >
+            {{ isOpen(server.serverId) ? "Ocultar ▲" : "Ver ▼" }}
+          </button>
+        </div>
+      </div>
+
+      <!-- CONTENT -->
+      <div v-if="isOpen(server.serverId)" class="p-3 space-y-3">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <!-- JAIL -->
+          <div
+            v-for="jail in server.jails"
+            :key="jail.name"
+            class="bg-slate-800 rounded-lg p-3 border border-slate-700"
+          >
+            <!-- JAIL HEADER -->
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-semibold text-slate-300">
+                🔒 {{ jail.name }}
+              </span>
+
+              <div class="flex items-center gap-2">
+                <span
+                  class="w-6 h-6 flex items-center justify-center text-[10px] font-bold rounded-full text-white animate-pulse"
+                  :class="getJailStatusColor(jail.geoBannedIPs?.length || 0)"
+                >
+                  {{ jail.geoBannedIPs?.length || 0 }}
+                </span>
+
+                <span class="text-[10px] text-slate-400"> IPs </span>
+              </div>
+            </div>
+
+            <!-- IPS -->
+            <div class="max-h-40 overflow-y-auto space-y-2 pr-1">
+              <div
+                v-for="ip in jail.geoBannedIPs"
+                :key="ip.ip"
+                class="bg-slate-900 border border-slate-700 rounded-md p-2"
+              >
+                <div class="font-mono text-white text-xs break-all">
+                  {{ ip.ip }}
+                </div>
+
+                <div class="flex items-center gap-2 text-[10px] text-slate-400 mt-1">
+                  <img
+                    v-if="ip.countryCode"
+                    :src="flagUrl(ip.countryCode)"
+                    class="w-4 h-3 rounded-sm"
+                  />
+
+                  <span> {{ ip.country }} · {{ ip.city }} </span>
+                </div>
+              </div>
+
+              <!-- SIN IPS -->
+              <div
+                v-if="!jail.geoBannedIPs?.length"
+                class="text-xs text-slate-500 italic"
+              >
+                No banned IPs
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMPTY -->
+    <div
+      v-if="servers.length === 0"
+      class="text-slate-400 text-sm col-span-full text-center py-10"
+    >
+      No hay servidores conectados
+    </div>
+  </div>
+</template>

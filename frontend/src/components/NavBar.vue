@@ -4,46 +4,56 @@
       <!-- LEFT -->
       <div class="flex items-center gap-3">
         <router-link to="/">
-          <img src="../assets/Fail2ban_logo.png" class="w-8 h-8 rounded-lg"
-        /></router-link>
+          <img src="../assets/Fail2ban_logo.png" class="w-8 h-8 rounded-lg" />
+        </router-link>
         <span class="font-bold text-lg">Fail2Ban Panel</span>
       </div>
 
       <!-- DESKTOP MENU -->
       <div class="hidden md:flex items-center gap-2">
-        <router-link to="/"><button class="nav-btn">📊 Dashboard</button></router-link>
+        <router-link to="/">
+          <button class="nav-btn">📊 Dashboard</button>
+        </router-link>
 
-        <Router-link to="/JailsView">
+        <router-link to="/JailsView">
           <button class="nav-btn">
             🔒 Jails
-            <span class="badge">{{ store.activeJails }}</span>
-          </button></Router-link
-        >
+            <span class="badge">{{ activeJails }}</span>
+          </button>
+        </router-link>
 
-        <router-link to="/BannedIpView"
-          ><button class="nav-btn">
+        <router-link to="/BannedIpView">
+          <button class="nav-btn">
             🚨 Alertas
-            <span v-if="store.logs.length > 0" class="badge-red">
-              {{ store.logs.length }}
+            <span v-if="alertsCount > 0" class="badge-red">
+              {{ alertsCount }}
             </span>
-          </button></router-link
-        >
+          </button>
+        </router-link>
 
         <router-link to="/JailConfigView">
-          <button class="nav-btn">⚙️ Config</button>
+          <button class="nav-btn">
+            ⚙️ Config
+            <span v-if="configCount > 0" class="badge">
+              {{ configCount }}
+            </span>
+          </button>
         </router-link>
-        <router-link to="/LogHistoryView"
-          ><button class="nav-btn">
+
+        <router-link to="/LogHistoryView">
+          <button class="nav-btn">
             📄 Logs History
-            <span class="badge">{{ store.bans.length }}</span>
-          </button></router-link
-        >
+            <span v-if="bansCount > 0" class="badge">
+              {{ bansCount }}
+            </span>
+          </button>
+        </router-link>
 
         <router-link to="/MapaView">
-          <button class="mobile-btn flex items-center justify-between">
-            <span>🗺️ Mapa</span>
-            <span v-if="store.alerts > 0" class="badge-red">
-              {{ store.alerts }}
+          <button class="nav-btn flex items-center gap-2">
+            🗺️ Mapa
+            <span v-if="alertsCount > 0" class="badge-red">
+              {{ alertsCount }}
             </span>
           </button>
         </router-link>
@@ -58,7 +68,6 @@
           🔄
         </button>
 
-        <!-- HAMBURGER -->
         <button
           class="md:hidden text-2xl px-3 py-1 rounded-xl hover:bg-slate-800"
           @click="toggleMenu"
@@ -73,42 +82,49 @@
       v-if="mobileOpen"
       class="md:hidden mt-3 bg-slate-800 rounded-2xl p-3 space-y-2 shadow-2xl border border-slate-700"
     >
-      <router-link to="/"><button class="mobile-btn">📊 Dashboard</button></router-link>
+      <router-link to="/">
+        <button class="mobile-btn">📊 Dashboard</button>
+      </router-link>
 
-      <router-link to="/JailsView"
-        ><button class="mobile-btn flex items-center justify-between">
+      <router-link to="/JailsView">
+        <button class="mobile-btn flex justify-between">
           <span>🔒 Jails</span>
-          <span class="badge">{{ store.activeJails }}</span>
-        </button></router-link
-      >
+          <span class="badge">{{ activeJails }}</span>
+        </button>
+      </router-link>
 
       <router-link to="/BannedIpView">
-        <button class="mobile-btn flex items-center justify-between">
+        <button class="mobile-btn flex justify-between">
           <span>🚨 Alertas</span>
-          <span v-if="store.logs.length > 0" class="badge-red">
-            {{ store.logs.length }}
+          <span v-if="alertsCount > 0" class="badge-red">
+            {{ alertsCount }}
           </span>
-        </button></router-link
-      >
+        </button>
+      </router-link>
 
       <router-link to="/JailConfigView">
-        <button class="mobile-btn">⚙️ Config</button>
+        <button class="mobile-btn flex justify-between">
+          ⚙️ Config
+          <span v-if="configCount > 0" class="badge">
+            {{ configCount }}
+          </span>
+        </button>
       </router-link>
 
       <router-link to="/LogHistoryView">
-        <button class="mobile-btn flex items-center justify-between">
+        <button class="mobile-btn flex justify-between">
           <span>📄 Logs History</span>
-          <span class="bg-blue-500 text-xs px-2 py-0.5 rounded-full">{{
-            store.bans.length
-          }}</span>
+          <span v-if="bansCount > 0" class="badge">
+            {{ bansCount }}
+          </span>
         </button>
       </router-link>
 
       <router-link to="/MapaView">
-        <button class="mobile-btn flex items-center justify-between">
+        <button class="mobile-btn flex justify-between">
           <span>🗺️ Mapa</span>
-          <span v-if="store.alerts > 0" class="badge-red">
-            {{ store.alerts }}
+          <span v-if="alertsCount > 0" class="badge-red">
+            {{ alertsCount }}
           </span>
         </button>
       </router-link>
@@ -117,19 +133,40 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, watch } from "vue";
+import { useRoute } from "vue-router";
 import { useFail2BanStore } from "../stores/fail2ban";
-
-import { MapPinned } from "lucide-vue-next";
 
 const store = useFail2BanStore();
 const mobileOpen = ref(false);
 
-// Debug: verificar que el store tiene los datos correctos
-onMounted(() => {
-  console.log("NavBar mounted, store.alerts:", store.alerts);
-  console.log("NavBar mounted, store.activeJails:", store.activeJails);
+const route = useRoute();
+
+watch(route, () => {
+  mobileOpen.value = false;
 });
+/* ---------------- SAFE COMPUTEDS ---------------- */
+
+const servers = computed(() => store.servers || []);
+const configCount = computed(() => servers.value.length);
+/* total jails */
+const activeJails = computed(() =>
+  servers.value.reduce((acc, s) => acc + (s.jails?.length || 0), 0)
+);
+
+/* total IPs (alerts reales) */
+const alertsCount = computed(() =>
+  servers.value.reduce((acc, s) => {
+    return (
+      acc + (s.jails || []).reduce((jacc, j) => jacc + (j.geoBannedIPs?.length || 0), 0)
+    );
+  }, 0)
+);
+
+/* optional: logs placeholder (si no existe aún en backend) */
+const bansCount = computed(() => 0);
+
+/* ---------------- UI ---------------- */
 
 const toggleMenu = () => {
   mobileOpen.value = !mobileOpen.value;
@@ -137,7 +174,6 @@ const toggleMenu = () => {
 
 const handleRefresh = () => {
   store.refresh();
-  window.location.reload();
 };
 </script>
 
@@ -155,6 +191,6 @@ const handleRefresh = () => {
 }
 
 .badge-red {
-  @apply ml-2 bg-red-600 text-xs px-2 py-0.5 rounded-full;
+  @apply ml-2 bg-red-600 text-xs px-2 py-0.5 rounded-full animate-pulse;
 }
 </style>

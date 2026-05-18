@@ -1,3 +1,59 @@
+<script setup>
+import { ref, computed, watch } from "vue";
+import { useRoute } from "vue-router";
+import { useFail2BanStore } from "../stores/fail2ban";
+
+const store = useFail2BanStore();
+
+const mobileOpen = ref(false);
+const aboutOpenDesktop = ref(false);
+const aboutOpenMobile = ref(false);
+
+const route = useRoute();
+
+/* TOGGLES */
+const toggleMenu = () => {
+  mobileOpen.value = !mobileOpen.value;
+};
+
+const toggleAboutDesktop = () => {
+  aboutOpenDesktop.value = !aboutOpenDesktop.value;
+};
+
+const toggleAboutMobile = () => {
+  aboutOpenMobile.value = !aboutOpenMobile.value;
+};
+
+const handleRefresh = () => {
+  store.refresh();
+};
+
+/* AUTO CLOSE ON ROUTE CHANGE */
+watch(route, () => {
+  mobileOpen.value = false;
+  aboutOpenDesktop.value = false;
+  aboutOpenMobile.value = false;
+});
+
+/* DATA */
+const servers = computed(() => store.servers || []);
+
+const configCount = computed(() => servers.value.length);
+
+const activeJails = computed(() =>
+  servers.value.reduce((acc, s) => acc + (s.jails?.length || 0), 0)
+);
+
+const alertsCount = computed(() =>
+  servers.value.reduce((acc, s) => {
+    return (
+      acc + (s.jails || []).reduce((jacc, j) => jacc + (j.geoBannedIPs?.length || 0), 0)
+    );
+  }, 0)
+);
+
+const bansCount = computed(() => 0);
+</script>
 <template>
   <nav class="relative bg-slate-900 text-white px-4 py-3 shadow-lg rounded-b-2xl z-50">
     <div class="max-w-6xl mx-auto flex items-center justify-between">
@@ -57,6 +113,24 @@
             </span>
           </button>
         </router-link>
+
+        <!-- ABOUT DESKTOP -->
+        <div class="relative">
+          <button class="nav-btn" @click="toggleAboutDesktop">ℹ️ About</button>
+
+          <div
+            v-if="aboutOpenDesktop"
+            class="absolute right-0 mt-2 w-40 bg-slate-800 rounded-xl shadow-lg border border-slate-700 overflow-hidden"
+          >
+            <router-link to="/about">
+              <div class="px-3 py-2 hover:bg-slate-700 cursor-pointer">About us</div>
+            </router-link>
+
+            <router-link to="/version">
+              <div class="px-3 py-2 hover:bg-slate-700 cursor-pointer">Version</div>
+            </router-link>
+          </div>
+        </div>
       </div>
 
       <!-- RIGHT -->
@@ -105,91 +179,53 @@
       <router-link to="/JailConfigView">
         <button class="mobile-btn flex justify-between">
           ⚙️ Config
-          <span v-if="configCount > 0" class="badge">
-            {{ configCount }}
-          </span>
+          <span class="badge">{{ configCount }}</span>
         </button>
       </router-link>
 
       <router-link to="/LogHistoryView">
         <button class="mobile-btn flex justify-between">
-          <span>📄 Logs History</span>
-          <span v-if="bansCount > 0" class="badge">
-            {{ bansCount }}
-          </span>
+          📄 Logs History
+          <span class="badge">{{ bansCount }}</span>
         </button>
       </router-link>
 
       <router-link to="/MapaView">
         <button class="mobile-btn flex justify-between">
-          <span>🗺️ Mapa</span>
+          🗺️ Mapa
           <span v-if="alertsCount > 0" class="badge-red">
             {{ alertsCount }}
           </span>
         </button>
       </router-link>
+
+      <!-- ABOUT MOBILE -->
+      <div>
+        <button class="mobile-btn" @click="toggleAboutMobile">ℹ️ About</button>
+
+        <div v-if="aboutOpenMobile" class="ml-3 space-y-1">
+          <router-link to="/about">
+            <div class="mobile-btn">About us</div>
+          </router-link>
+
+          <router-link to="/version">
+            <div class="mobile-btn">Version</div>
+          </router-link>
+        </div>
+      </div>
     </div>
   </nav>
 </template>
-
-<script setup>
-import { ref, computed, watch } from "vue";
-import { useRoute } from "vue-router";
-import { useFail2BanStore } from "../stores/fail2ban";
-
-const store = useFail2BanStore();
-const mobileOpen = ref(false);
-
-const route = useRoute();
-
-watch(route, () => {
-  mobileOpen.value = false;
-});
-/* ---------------- SAFE COMPUTEDS ---------------- */
-
-const servers = computed(() => store.servers || []);
-const configCount = computed(() => servers.value.length);
-/* total jails */
-const activeJails = computed(() =>
-  servers.value.reduce((acc, s) => acc + (s.jails?.length || 0), 0)
-);
-
-/* total IPs (alerts reales) */
-const alertsCount = computed(() =>
-  servers.value.reduce((acc, s) => {
-    return (
-      acc + (s.jails || []).reduce((jacc, j) => jacc + (j.geoBannedIPs?.length || 0), 0)
-    );
-  }, 0)
-);
-
-/* optional: logs placeholder (si no existe aún en backend) */
-const bansCount = computed(() => 0);
-
-/* ---------------- UI ---------------- */
-
-const toggleMenu = () => {
-  mobileOpen.value = !mobileOpen.value;
-};
-
-const handleRefresh = () => {
-  store.refresh();
-};
-</script>
-
 <style scoped>
 .nav-btn {
   @apply px-3 py-1 rounded-xl text-sm hover:bg-slate-700 transition;
 }
-
 .mobile-btn {
   @apply w-full text-left px-3 py-2 rounded-xl hover:bg-slate-700 transition;
 }
-
 .badge {
   @apply ml-2 bg-slate-700 text-xs px-2 py-0.5 rounded-full;
 }
-
 .badge-red {
   @apply ml-2 bg-red-600 text-xs px-2 py-0.5 rounded-full animate-pulse;
 }

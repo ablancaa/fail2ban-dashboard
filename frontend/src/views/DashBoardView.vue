@@ -107,7 +107,7 @@ const sendAction = async (server, action) => {
     >
       <!-- HEADER -->
       <div class="p-4 border-b border-slate-700">
-        <div class="flex justify-between items-start gap-2">
+        <div class="flex justify-between items-start gap-4">
           <!-- LEFT -->
           <div class="flex items-start gap-3">
             <span class="text-xl">🖥️</span>
@@ -132,16 +132,29 @@ const sendAction = async (server, action) => {
                 </span>
               </div>
 
-              <!-- ALERTAS -->
-              <div class="mt-2 flex items-center gap-2">
-                <span class="text-red-400 text-base">🚨</span>
+              <!-- CONTENEDOR PRINCIPAL: Forzamos línea horizontal con flex-row y evitamos que se rompa con no-wrap -->
+              <div class="mt-2 flex flex-row flex-nowrap items-center gap-4">
+                <!-- Bloque 1: Alertas (🚨) -->
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span class="text-red-400 text-base">🚨</span>
+                  <span
+                    class="px-2 py-0.5 rounded-full font-bold text-[10px] animate-pulse text-white"
+                    :class="getJailStatusColor(getServerAlerts(server))"
+                  >
+                    {{ getServerAlerts(server) }} alerts
+                  </span>
+                </div>
 
-                <span
-                  class="px-2 py-0.5 rounded-full font-bold text-[10px] animate-pulse text-white"
-                  :class="getJailStatusColor(getServerAlerts(server))"
-                >
-                  {{ getServerAlerts(server) }} alerts
-                </span>
+                <!-- Bloque 2: Jails (🔒) - Ahora correctamente DENTRO del contenedor horizontal -->
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span class="text-amber-500 text-base">🔒</span>
+                  <!-- Icono también a juego si quieres -->
+                  <span
+                    class="px-2 py-0.5 rounded-full font-bold text-[10px] text-white bg-amber-500"
+                  >
+                    {{ server.jails?.length || 0 }} jails
+                  </span>
+                </div>
               </div>
             </div>
           </div>
